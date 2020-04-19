@@ -1,0 +1,423 @@
+#!/usr/bin/ansible-playbook
+---
+#
+# Configures hosts in an inventory group named "mediacenter_group"
+# consisting of pre-installed OSMC devices with networking and SSH
+# service available.
+#
+# Usage: ./init-mediacenter.yml --ask-vault-pass
+#
+
+- hosts: mediacenter_group
+  remote_user: osmc
+
+  environment:
+    PATH: "/sbin:/usr/sbin:{{ ansible_env.PATH }}"
+
+  vars:
+
+    privateinternetaccess_server: "US Chicago"
+
+    storage_path: /mnt/storage
+    storage_fstype: ext4
+    storage_options: auto
+    # FIXME Find a way to discover this
+    storage_device: /dev/storage/array1
+
+    pihole_host_dns_port: 53
+    pihole_host_http_port: 8080
+    pihole_host_https_port: 8443
+
+    nzbget_host_port: 6789
+    nzbget_config_dir: /var/lib/nzbget
+
+    lidarr_host_port: 8686
+    lidarr_config_dir: /var/lib/lidarr
+
+    sonarr_host_port: 8989
+    sonarr_config_dir: /var/lib/sonarr
+
+    radarr_host_port: 7878
+    radarr_config_dir: /var/lib/radarr
+
+  tasks:
+
+  - name: Verify vault secret
+    set_fact:
+      vault_test: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        62313137306661623433386666346137313264636664663032313664383566383334386464646232
+        6133373362633935313236396661393133373138306434640a326566303532666534336662336431
+        64643737333831343662633863316237373763376464633631623764643730343439373363323861
+        6264376563326630300a333163316137396333323436623338373235393266326232373736643838
+        39326339333730646338656661633765653839386439613336613539333362636530
+
+  #------------------------------------
+  # Begin system-level tasks (as root)
+  #------------------------------------
+
+  - name: System-level tasks
+    become: yes
+    block:
+
+    - name: Set hostname to match inventory
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Update 127.0.1.1 hosts entry
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1\t{{ inventory_hostname }}"
+
+    # This is for RetroPie
+    - name: Add user to "input" group
+      user:
+        name: "{{ ansible_ssh_user }}"
+        groups: input
+        append: yes
+
+    #-------------------
+    # Apt Configuration
+    #-------------------
+
+    - name: Add packages to set up Docker's repository
+      apt:
+        name:
+        - apt-transport-https
+        - ca-certificates
+        - gnupg-agent
+        - lsb-release
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+
+    - name: Look up distribution codename
+      command: lsb_release --codename --short
+      register: codename
+      changed_when: False
+
+    - name: Add apt repository for Docker
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/debian {{ codename.stdout }} stable"
+
+    # XXX Hold off on installing mdadm.
+    #     See Storage Configuration note below.
+    - name: Add required packages
+      apt:
+        name:
+        - apt-file
+        - bash-completion
+        - dnsutils
+        - docker-ce
+        - git
+        - htop
+        - lsof
+        - lvm2
+        - man-db
+        - msmtp-mta
+        - openvpn
+        - powerline
+        - python-docker
+        - python3-powerline
+        - rsync
+        - tmux
+        - unzip
+        - usbutils
+        - vim-addon-manager
+        - vim-nox
+
+    - name: Create apt-file cache
+      apt:
+        update_cache: yes
+
+    #------------------------------------------
+    # Mail Transport Agent (MTA) Configuration
+    #------------------------------------------
+
+    - name: Add msmtp configuration
+      copy:
+        src: msmtprc.vault
+        dest: /etc/msmtprc
+        mode: u=rw,g=,o=
+        owner: root
+        group: root
+      no_log: True
+
+    - name: Extract default address from msmtp
+      shell: "msmtp --pretend < /dev/null | grep ^from | awk '{ print $3 }'"
+      register: msmtp_from
+
+    - set_fact:
+        mail_address: "{{ msmtp_from.stdout }}"
+
+    #-----------------------
+    # OpenVPN Configuration
+    #-----------------------
+
+    - name: Create directory for openvpn files
+      file:
+        path: /etc/openvpn/pia
+        state: directory
+      register: pia
+
+    - name: Download openvpn files for privateinternetaccess
+      unarchive:
+        remote_src: yes
+        src: https://www.privateinternetaccess.com/openvpn/openvpn.zip
+        dest: "{{ pia.path }}"
+        creates: "{{ pia.path }}/ca.rsa.2048.crt"
+
+    - name: List openvpn files for privateinternetaccess
+      find:
+        paths: "{{ pia.path }}"
+        patterns: "*.ovpn"
+      register: pia_config
+
+    - name: Tweak openvpn files to use a credentials file
+      lineinfile:
+        path: "{{ item }}"
+        line: auth-user-pass pia.credentials
+        regexp: ^auth-user-pass
+      loop: "{{ pia_config.files | map(attribute='path') | list }}"
+
+    - name: Add privateinternetaccess credentials
+      copy:
+        content: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65656362353038643666333131636165653531626466623565633663653234616536323763633161
+          3936633737313236306435316163346537383563376432660a346132333965313838313363376161
+          30613665383534383461363662396663313666633931613261383364613265306530326437353233
+          6661363832643932360a326265396439663534313464363933616564626135653333373766616639
+          62333535373166643839383964343361366236386165326637386432623636633939
+        dest: /etc/openvpn/pia.credentials
+        mode: u=rw,g=,o=
+        owner: root
+        group: root
+      no_log: True
+
+    - name: Link openvpn configuration to the preferred server
+      file:
+        src: "{{ pia.path }}/{{ privateinternetaccess_server }}.ovpn"
+        dest: /etc/openvpn/default.conf
+        state: link
+
+    - name: Enable and restart openvpn.service
+      systemd:
+        name: openvpn.service
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+
+    #-----------------------
+    # Storage Configuration
+    #-----------------------
+
+    # XXX Installing mdadm on a Vero 4K without a mdadm.conf file present
+    #     results in the root partition somehow being re-mounted as read-
+    #     only, which breaks the system.  Upload a mdadm.conf file before
+    #     installing the mdadm package to prevent this.
+
+    - name: Add directory for mdadm configuration
+      file:
+        path: /etc/mdadm
+        state: directory
+
+    - name: Add a mdadm configuration
+      template:
+        src: mdadm.conf.j2
+        dest: /etc/mdadm/mdadm.conf
+        mode: u=rw,g=r,o=r
+        owner: root
+        group: root
+        force: no
+
+    - name: Add mdadm package
+      apt:
+        name: mdadm
+
+    - name: Scan for software RAID devices
+      command: mdadm --detail --scan
+      register: mdadm_scan
+
+    - set_fact:
+        raid_device_present: "{{ mdadm_scan.stdout_lines | length | bool }}"
+
+    - name: Configure software RAID device
+      when: raid_device_present
+      block:
+
+      - name: Add scan results to configuration
+        lineinfile:
+          path: /etc/mdadm/mdadm.conf
+          regexp: "^ARRAY "
+          line: "{{ mdadm_scan.stdout_lines[0] }}"
+
+      - name: Add fstab entry and mount
+        mount:
+          src: "{{ storage_device }}"
+          path: "{{ storage_path }}"
+          fstype: "{{ storage_fstype }}"
+          opts: "{{ storage_options }}"
+          state: mounted
+
+      - name: Restart mdmonitor.service
+        systemd:
+          name: mdmonitor.service
+          enabled: yes
+          state: restarted
+
+    #----------------------
+    # Docker Configuration
+    #----------------------
+
+    - name: Add user to "docker" group
+      user:
+        name: "{{ ansible_ssh_user }}"
+        groups: docker
+        append: yes
+
+    - name: Enable and start docker.service
+      systemd:
+        name: docker.service
+        enabled: yes
+        state: started
+
+    # FIXME Revise for Ansible 2.8 or later
+    - name: Pull Docker images for various services
+      docker_image:
+        name: "{{ item }}"
+        pull: yes
+      loop:
+      - pihole/pihole
+      - linuxserver/nzbget
+      - linuxserver/lidarr
+      - linuxserver/sonarr
+      - linuxserver/radarr
+
+    - name: Look up timezone name
+      command: cat /etc/timezone
+      register: timezone_result
+      changed_when: False
+
+    - set_fact:
+        tz_name: "{{ timezone_result.stdout }}"
+
+    - name: Create Docker volume mount points
+      file:
+        path: "{{ item.path }}"
+        mode: u=rwx,g=rx,o=rx
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        state: directory
+      loop:
+      - path: /etc/pihole
+        owner: root
+        group: root
+      - path: /etc/dnsmasq.d
+        owner: root
+        group: root
+      - path: "{{ nzbget_config_dir }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+      - path: "{{ lidarr_config_dir }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+      - path: "{{ sonarr_config_dir }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+      - path: "{{ radarr_config_dir }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+
+    - name: Add service files for Docker images
+      template:
+        src: "{{ item }}.j2"
+        dest: "/etc/systemd/system/{{ item }}"
+        mode: u=rw,g=r,o=r
+        owner: root
+        group: root
+      loop:
+      - pihole.service
+      - nzbget.service
+      - lidarr.service
+      - sonarr.service
+      - radarr.service
+
+    - name: Download default nzbget configuration
+      get_url:
+        url: https://raw.githubusercontent.com/nzbget/nzbget/develop/nzbget.conf
+        dest: "{{ nzbget_config_dir }}/nzbget.conf"
+        mode: u=rw,g=r,o=r
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+        force: no
+
+    - name: Customize nzbget configuration
+      lineinfile:
+        path: "{{ nzbget_config_dir }}/nzbget.conf"
+        regexp: "^({{ item.key }})="
+        line: "\\1={{ item.value }}"
+        backrefs: yes
+      no_log: True
+      loop:
+      - key: MainDir
+        value: "{{ storage_path }}/Downloads"
+      - key: DestDir
+        value: ${MainDir}/completed
+      - key: InterDir
+        value: ${MainDir}/intermediate
+      - key: WebDir
+        value: ${AppDir}/webui
+      - key: Server1.Name
+        value: Newshosting
+      - key: Server1.Host
+        value: news.newshosting.com
+      - key: Server1.Port
+        value: 563
+      - key: Server1.Username
+        value: "{{ mail_address }}"
+      - key: Server1.Password
+        value: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          33626266653537393732653562653265633366336661313263363130336163333164343039663231
+          3431363864323335396165333933393763303138643932350a356537626665356539363765336163
+          35663763643636393066636166626463363061303736373938303162363634343832633265613764
+          6134623566656664620a393130313536663164353664346635343065303662383735373232636533
+          63333266626134623133386566663436646663633436666239323236323763343561
+      - key: Server1.Encryption
+        value: "yes"
+      - key: Server1.Connections
+        value: 30
+      - key: Server1.Retention
+        value: 4272
+      - key: ControlUsername
+        value: ""
+      - key: ControlPassword
+        value: ""
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Start or restart containerized services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: restarted
+      loop:
+      - pihole.service
+      - nzbget.service
+      - lidarr.service
+      - radarr.service
+      - sonarr.service
+
+  #-------------------------------------
+  # End of system-level tasks (as root)
+  #-------------------------------------
+
+  - name: Clone retrOSMCmk2 repo for RetroPie installer
+    git:
+      repo: https://github.com/hissingshark/retrOSMCmk2.git
+      dest: "{{ ansible_user_dir }}/retrOSMCmk2"

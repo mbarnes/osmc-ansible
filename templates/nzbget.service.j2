@@ -1,0 +1,25 @@
+[Unit]
+Description=NZBGet (container)
+Requires=docker.service
+Requires=mnt-storage.mount
+After=docker.service
+After=mnt-storage.mount
+
+[Service]
+Restart=always
+RestartSec=30
+
+ExecStart=/usr/bin/docker run --rm \
+                              --name=nzbget \
+                              -p {{ nzbget_host_port }}:6789 \
+                              -v {{ nzbget_config_dir }}:/config \
+                              -v {{ storage_path }}:{{ storage_path }} \
+                              -e PUID={{ ansible_user_uid }} \
+                              -e PGID={{ ansible_user_gid }} \
+                              -e TZ={{ tz_name }} \
+                              linuxserver/nzbget
+
+ExecStop=/usr/bin/docker stop nzbget
+
+[Install]
+WantedBy=multi-user.target
