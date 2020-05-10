@@ -31,9 +31,6 @@
     nzbget_host_port: 6789
     nzbget_config_dir: /var/lib/nzbget
 
-    lidarr_host_port: 8686
-    lidarr_config_dir: /var/lib/lidarr
-
     sonarr_host_port: 8989
     sonarr_config_dir: /var/lib/sonarr
 
@@ -292,7 +289,6 @@
       loop:
       - pihole/pihole
       - linuxserver/nzbget
-      - linuxserver/lidarr
       - linuxserver/sonarr
       - linuxserver/radarr
 
@@ -321,9 +317,6 @@
       - path: "{{ nzbget_config_dir }}"
         owner: "{{ ansible_user_uid }}"
         group: "{{ ansible_user_gid }}"
-      - path: "{{ lidarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
       - path: "{{ sonarr_config_dir }}"
         owner: "{{ ansible_user_uid }}"
         group: "{{ ansible_user_gid }}"
@@ -341,7 +334,6 @@
       loop:
       - pihole.service
       - nzbget.service
-      - lidarr.service
       - sonarr.service
       - radarr.service
 
@@ -409,7 +401,6 @@
       loop:
       - pihole.service
       - nzbget.service
-      - lidarr.service
       - radarr.service
       - sonarr.service
 
