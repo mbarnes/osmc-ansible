@@ -21,8 +21,6 @@
     storage_path: /mnt/storage
     storage_fstype: ext4
     storage_options: auto
-    # FIXME Find a way to discover this
-    storage_device: /dev/storage/array1
 
     pihole_host_dns_port: 53
     pihole_host_http_port: 8080
@@ -250,6 +248,47 @@
           path: /etc/mdadm/mdadm.conf
           regexp: "^ARRAY "
           line: "{{ mdadm_scan.stdout_lines[0] }}"
+
+      - name: Find the canonical RAID device path
+        command: "realpath {{ mdadm_scan.stdout_lines[0].split()[1] }}"
+        register: raid_device
+
+      - name: Scan for LVM physical volumes
+        command: pvs --reportformat json
+        register: pvs_raw
+
+      - name: Parse LVM scan output
+        set_fact:
+          pvs: "{{ pvs_raw.stdout | from_json }}"
+
+      - name: Identify LVM physical volume for RAID device
+        set_fact:
+          raid_device_pv: "{{ item }}"
+        when: item.pv_name == raid_device.stdout
+        loop: "{{ pvs.report[0].pv }}"
+
+      - name: Ensure RAID device has a volume group
+        assert:
+          that: raid_device_pv.vg_name is defined
+          success_msg: "volume group is {{ raid_device_pv.vg_name }}"
+
+      - name: Scan for LVM logical volumes
+        command: lvs --reportformat json
+        register: lvs_raw
+
+      - name: Parse LVM scan output
+        set_fact:
+          lvs: "{{ lvs_raw.stdout | from_json }}"
+
+      - name: Identify LVM logical volume for RAID device
+        set_fact:
+          raid_device_lv: "{{ item }}"
+        when: item.vg_name == raid_device_pv.vg_name
+        loop: "{{ lvs.report[0].lv }}"
+
+      - name: Set device path for mass-storage volume
+        set_fact:
+          storage_device: "{{ '/dev/%s/%s' % (raid_device_lv.vg_name, raid_device_lv.lv_name) }}"
 
       - name: Add fstab entry and mount
         mount:
