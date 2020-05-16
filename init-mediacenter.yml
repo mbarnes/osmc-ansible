@@ -10,6 +10,8 @@
 
 - hosts: mediacenter_group
   remote_user: osmc
+  # Gather facts later as root
+  gather_facts: no
 
   environment:
     PATH: "/sbin:/usr/sbin:{{ ansible_env.PATH }}"
@@ -55,6 +57,17 @@
     become: yes
     block:
 
+    - name: Add fact collection dependencies
+      apt:
+        name:
+        # Adds "ansible_lsb"
+        - lsb-release
+        # Adds "ansible_lvm"
+        - lvm2
+
+    - name: Gather more facts as root
+      setup:
+
     - name: Set hostname to match inventory
       hostname:
         name: "{{ inventory_hostname }}"
@@ -82,20 +95,14 @@
         - apt-transport-https
         - ca-certificates
         - gnupg-agent
-        - lsb-release
 
     - name: Add Docker's official GPG key
       apt_key:
         url: https://download.docker.com/linux/debian/gpg
 
-    - name: Look up distribution codename
-      command: lsb_release --codename --short
-      register: codename
-      changed_when: False
-
     - name: Add apt repository for Docker
       apt_repository:
-        repo: "deb https://download.docker.com/linux/debian {{ codename.stdout }} stable"
+        repo: "deb https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable"
 
     # XXX Hold off on installing mdadm.
     #     See Storage Configuration note below.
@@ -109,7 +116,6 @@
         - git
         - htop
         - lsof
-        - lvm2
         - man-db
         - msmtp-mta
         - openvpn
@@ -253,42 +259,28 @@
         command: "realpath {{ mdadm_scan.stdout_lines[0].split()[1] }}"
         register: raid_device
 
-      - name: Scan for LVM physical volumes
-        command: pvs --reportformat json
-        register: pvs_raw
-
-      - name: Parse LVM scan output
+      - name: Identify LVM volume group for RAID device
         set_fact:
-          pvs: "{{ pvs_raw.stdout | from_json }}"
-
-      - name: Identify LVM physical volume for RAID device
-        set_fact:
-          raid_device_pv: "{{ item }}"
-        when: item.pv_name == raid_device.stdout
-        loop: "{{ pvs.report[0].pv }}"
+          raid_device_vg: "{{ item.value.vg }}"
+        when:
+        - item.key == raid_device.stdout
+        - item.value.vg is defined
+        loop: "{{ ansible_lvm.pvs | dict2items }}"
 
       - name: Ensure RAID device has a volume group
         assert:
-          that: raid_device_pv.vg_name is defined
-          success_msg: "volume group is {{ raid_device_pv.vg_name }}"
-
-      - name: Scan for LVM logical volumes
-        command: lvs --reportformat json
-        register: lvs_raw
-
-      - name: Parse LVM scan output
-        set_fact:
-          lvs: "{{ lvs_raw.stdout | from_json }}"
+          that: raid_device_vg is defined
+          success_msg: "volume group is {{ raid_device_vg }}"
 
       - name: Identify LVM logical volume for RAID device
         set_fact:
-          raid_device_lv: "{{ item }}"
-        when: item.vg_name == raid_device_pv.vg_name
-        loop: "{{ lvs.report[0].lv }}"
+          raid_device_lv: "{{ item.key }}"
+        when: item.value.vg == raid_device_vg
+        loop: "{{ ansible_lvm.lvs | dict2items }}"
 
       - name: Set device path for mass-storage volume
         set_fact:
-          storage_device: "{{ '/dev/%s/%s' % (raid_device_lv.vg_name, raid_device_lv.lv_name) }}"
+          storage_device: "{{ '/dev/%s/%s' % (raid_device_vg, raid_device_lv) }}"
 
       - name: Add fstab entry and mount
         mount:
@@ -446,6 +438,9 @@
   #-------------------------------------
   # End of system-level tasks (as root)
   #-------------------------------------
+
+  - name: Gather facts again as remote user
+    setup:
 
   - name: Clone retrOSMCmk2 repo for RetroPie installer
     git:
