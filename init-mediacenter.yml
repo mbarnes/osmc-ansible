@@ -7,6 +7,15 @@
 #
 # Usage: ./init-mediacenter.yml --ask-vault-pass
 #
+# Available tags:
+# - system    : Run all system-level tasks (as root)
+# - user      : Run all user-level tasks
+# - apt       : (system) APT Configuration
+# - mta       : (system) Mail Transport Agent (MTA) Configuration
+# - vpn       : (system) OpenVPN Configuration
+# - storage   : (system) Storage Configuration
+# - docker    : (system) Docker Configuration
+#
 
 - hosts: mediacenter_group
   remote_user: osmc
@@ -64,19 +73,27 @@
         - lsb-release
         # Adds "ansible_lvm"
         - lvm2
+      tags:
+      - always
 
     - name: Gather more facts as root
       setup:
+      tags:
+      - always
 
     - name: Set hostname to match inventory
       hostname:
         name: "{{ inventory_hostname }}"
+      tags:
+      - system
 
     - name: Update 127.0.1.1 hosts entry
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1'
         line: "127.0.1.1\t{{ inventory_hostname }}"
+      tags:
+      - system
 
     # This is for RetroPie
     - name: Add user to "input" group
@@ -84,6 +101,8 @@
         name: "{{ ansible_ssh_user }}"
         groups: input
         append: yes
+      tags:
+      - system
 
     #-------------------
     # Apt Configuration
@@ -95,14 +114,23 @@
         - apt-transport-https
         - ca-certificates
         - gnupg-agent
+      tags:
+      - apt
+      - system
 
     - name: Add Docker's official GPG key
       apt_key:
         url: https://download.docker.com/linux/debian/gpg
+      tags:
+      - apt
+      - system
 
     - name: Add apt repository for Docker
       apt_repository:
         repo: "deb https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable"
+      tags:
+      - apt
+      - system
 
     # XXX Hold off on installing mdadm.
     #     See Storage Configuration note below.
@@ -129,9 +157,15 @@
         - usbutils
         - vim-addon-manager
         - vim-nox
+      tags:
+      - apt
+      - system
 
     - name: Update the command-not-found cache
       command: update-command-not-found
+      tags:
+      - apt
+      - system
 
     #------------------------------------------
     # Mail Transport Agent (MTA) Configuration
@@ -145,13 +179,25 @@
         owner: root
         group: root
       no_log: True
+      tags:
+      - mta
+      - storage
+      - system
 
     - name: Extract default address from msmtp
       shell: "msmtp --pretend < /dev/null | grep ^from | awk '{ print $3 }'"
       register: msmtp_from
+      tags:
+      - mta
+      - storage
+      - system
 
     - set_fact:
         mail_address: "{{ msmtp_from.stdout }}"
+      tags:
+      - mta
+      - storage
+      - system
 
     #-----------------------
     # OpenVPN Configuration
@@ -162,6 +208,9 @@
         path: /etc/openvpn/pia
         state: directory
       register: pia
+      tags:
+      - vpn
+      - system
 
     - name: Download openvpn files for privateinternetaccess
       unarchive:
@@ -169,12 +218,18 @@
         src: https://www.privateinternetaccess.com/openvpn/openvpn.zip
         dest: "{{ pia.path }}"
         creates: "{{ pia.path }}/ca.rsa.2048.crt"
+      tags:
+      - vpn
+      - system
 
     - name: List openvpn files for privateinternetaccess
       find:
         paths: "{{ pia.path }}"
         patterns: "*.ovpn"
       register: pia_config
+      tags:
+      - vpn
+      - system
 
     - name: Tweak openvpn files to use a credentials file
       lineinfile:
@@ -182,6 +237,9 @@
         line: auth-user-pass pia.credentials
         regexp: ^auth-user-pass
       loop: "{{ pia_config.files | map(attribute='path') | list }}"
+      tags:
+      - vpn
+      - system
 
     - name: Add privateinternetaccess credentials
       copy:
@@ -197,12 +255,18 @@
         owner: root
         group: root
       no_log: True
+      tags:
+      - vpn
+      - system
 
     - name: Link openvpn configuration to the preferred server
       file:
         src: "{{ pia.path }}/{{ privateinternetaccess_server }}.ovpn"
         dest: /etc/openvpn/default.conf
         state: link
+      tags:
+      - vpn
+      - system
 
     - name: Enable and restart openvpn.service
       systemd:
@@ -210,6 +274,9 @@
         enabled: yes
         state: restarted
         daemon_reload: yes
+      tags:
+      - vpn
+      - system
 
     #-----------------------
     # Storage Configuration
@@ -224,6 +291,9 @@
       file:
         path: /etc/mdadm
         state: directory
+      tags:
+      - storage
+      - system
 
     - name: Add a mdadm configuration
       template:
@@ -233,20 +303,35 @@
         owner: root
         group: root
         force: no
+      tags:
+      - storage
+      - system
 
     - name: Add mdadm package
       apt:
         name: mdadm
+      tags:
+      - storage
+      - system
 
     - name: Scan for software RAID devices
       command: mdadm --detail --scan
       register: mdadm_scan
+      tags:
+      - storage
+      - system
 
     - set_fact:
         raid_device_present: "{{ mdadm_scan.stdout_lines | length | bool }}"
+      tags:
+      - storage
+      - system
 
     - name: Configure software RAID device
       when: raid_device_present
+      tags:
+      - storage
+      - system
       block:
 
       - name: Add scan results to configuration
@@ -305,12 +390,18 @@
         name: "{{ ansible_ssh_user }}"
         groups: docker
         append: yes
+      tags:
+      - docker
+      - system
 
     - name: Enable and start docker.service
       systemd:
         name: docker.service
         enabled: yes
         state: started
+      tags:
+      - docker
+      - system
 
     # FIXME Revise for Ansible 2.8 or later
     - name: Pull Docker images for various services
@@ -322,14 +413,23 @@
       - linuxserver/nzbget
       - linuxserver/sonarr
       - linuxserver/radarr
+      tags:
+      - docker
+      - system
 
     - name: Look up timezone name
       command: cat /etc/timezone
       register: timezone_result
       changed_when: False
+      tags:
+      - docker
+      - system
 
     - set_fact:
         tz_name: "{{ timezone_result.stdout }}"
+      tags:
+      - docker
+      - system
 
     - name: Create Docker volume mount points
       file:
@@ -354,6 +454,9 @@
       - path: "{{ radarr_config_dir }}"
         owner: "{{ ansible_user_uid }}"
         group: "{{ ansible_user_gid }}"
+      tags:
+      - docker
+      - system
 
     - name: Add service files for Docker images
       template:
@@ -367,6 +470,9 @@
       - nzbget.service
       - sonarr.service
       - radarr.service
+      tags:
+      - docker
+      - system
 
     - name: Download default nzbget configuration
       get_url:
@@ -376,6 +482,9 @@
         owner: "{{ ansible_user_uid }}"
         group: "{{ ansible_user_gid }}"
         force: no
+      tags:
+      - docker
+      - system
 
     - name: Customize nzbget configuration
       lineinfile:
@@ -419,10 +528,16 @@
         value: ""
       - key: ControlPassword
         value: ""
+      tags:
+      - docker
+      - system
 
     - name: Reload systemd daemon
       systemd:
         daemon_reload: yes
+      tags:
+      - docker
+      - system
 
     - name: Start or restart containerized services
       systemd:
@@ -434,6 +549,9 @@
       - nzbget.service
       - radarr.service
       - sonarr.service
+      tags:
+      - docker
+      - system
 
   #-------------------------------------
   # End of system-level tasks (as root)
@@ -441,8 +559,12 @@
 
   - name: Gather facts again as remote user
     setup:
+    tags:
+    - always
 
   - name: Clone retrOSMCmk2 repo for RetroPie installer
     git:
       repo: https://github.com/hissingshark/retrOSMCmk2.git
       dest: "{{ ansible_user_dir }}/retrOSMCmk2"
+    tags:
+    - user
