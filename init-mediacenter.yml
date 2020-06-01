@@ -111,6 +111,7 @@
         name:
         - apt-file
         - bash-completion
+        - command-not-found
         - dnsutils
         - docker-ce
         - git
@@ -129,9 +130,8 @@
         - vim-addon-manager
         - vim-nox
 
-    - name: Create apt-file cache
-      apt:
-        update_cache: yes
+    - name: Update the command-not-found cache
+      command: update-command-not-found
 
     #------------------------------------------
     # Mail Transport Agent (MTA) Configuration
