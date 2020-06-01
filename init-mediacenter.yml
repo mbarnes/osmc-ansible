@@ -568,3 +568,16 @@
       dest: "{{ ansible_user_dir }}/retrOSMCmk2"
     tags:
     - user
+
+  - name: Copy hidden files to home directory
+    copy:
+      src: "{{ item }}"
+      dest: "{{ ansible_user_dir }}/.{{ item | basename }}"
+    with_fileglob: "home/hidden/*"
+    tags:
+    - user
+
+  - name: Add powerline to vim
+    command: vim-addons install powerline
+    tags:
+    - user

@@ -1,0 +1,15 @@
+# Force tmux to assume the terminal supports 256 colors.
+alias tmux="tmux -2"
+
+export EDITOR=vim
+export PAGER=less
+export PRINTER=Dell_Laser_Printer_1700
+
+alias restart-vpn="sudo systemctl restart openvpn@default.service"
+alias watch-storage="watch -n5 \"cat /proc/mdstat; echo; sudo mdadm --detail /dev/md/osmc-storage-array1\""
+
+# Powerline Configuration
+powerline-daemon -q
+POWERLINE_BASH_CONTINUATION=1
+POWERLINE_BASH_SELECT=1
+. /usr/share/powerline/bindings/bash/powerline.sh

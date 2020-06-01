@@ -1,0 +1,35 @@
+:scriptencoding utf-8
+
+" Enable plugins for specific file types
+filetype plugin on
+
+" Enable syntax highlighting
+syntax enable
+
+" Use color palette for a dark background
+set background=dark
+
+" Use UTF-8 encoding
+set encoding=utf-8
+
+" Do not expand tab characters into spaces
+set noexpandtab
+
+" Highlight search pattern matches
+set hlsearch
+
+" Show tabs, trailing whitespace, and continued lines visually
+set list listchars=tab:»·,trail:·,extends:…
+
+"------------------------------------------
+" Supplemental configuration for powerline
+"------------------------------------------
+
+" Always display the statusline in all windows
+set laststatus=2
+
+" Always display the tabline, even if there is only one tab
+set showtabline=2
+
+" Hide the default mode text (e.g. -- INSERT -- below the statusline)
+set noshowmode
