@@ -46,6 +46,9 @@
     radarr_host_port: 7878
     radarr_config_dir: /var/lib/radarr
 
+    bazarr_host_port: 6767
+    bazarr_config_dir: /var/lib/bazarr
+
   tasks:
 
   - name: Verify vault secret
@@ -413,6 +416,7 @@
       - linuxserver/nzbget
       - linuxserver/sonarr
       - linuxserver/radarr
+      - linuxserver/bazarr
       tags:
       - docker
       - system
@@ -454,6 +458,9 @@
       - path: "{{ radarr_config_dir }}"
         owner: "{{ ansible_user_uid }}"
         group: "{{ ansible_user_gid }}"
+      - path: "{{ bazarr_config_dir }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
       tags:
       - docker
       - system
@@ -470,6 +477,7 @@
       - nzbget.service
       - sonarr.service
       - radarr.service
+      - bazarr.service
       tags:
       - docker
       - system
@@ -549,6 +557,7 @@
       - nzbget.service
       - radarr.service
       - sonarr.service
+      - bazarr.service
       tags:
       - docker
       - system
