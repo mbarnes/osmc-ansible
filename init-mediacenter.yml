@@ -12,6 +12,7 @@
 # - user      : Run all user-level tasks
 # - apt       : (system) APT Configuration
 # - mta       : (system) Mail Transport Agent (MTA) Configuration
+# - ups       : (system) Uninterruptible Power Supply (UPS) Configuration
 # - vpn       : (system) OpenVPN Configuration
 # - storage   : (system) Storage Configuration
 # - docker    : (system) Docker Configuration
@@ -140,8 +141,10 @@
     - name: Add required packages
       apt:
         name:
+        - apcupsd
         - apt-file
         - bash-completion
+        - bsd-mailx
         - command-not-found
         - dnsutils
         - docker-ce
@@ -184,6 +187,7 @@
       no_log: True
       tags:
       - mta
+      - ups
       - storage
       - system
 
@@ -192,6 +196,7 @@
       register: msmtp_from
       tags:
       - mta
+      - ups
       - storage
       - system
 
@@ -199,7 +204,68 @@
         mail_address: "{{ msmtp_from.stdout }}"
       tags:
       - mta
+      - ups
       - storage
+      - system
+
+    #--------------------------------------------------
+    # Uninterruptible Power Supply (UPS) Configuration
+    # For an APC Back-UPS CS 350
+    #--------------------------------------------------
+
+    - name: Customize apcupsd configuration
+      lineinfile:
+        path: /etc/apcupsd/apcupsd.conf
+        regexp: "^#?({{ item.key }})"
+        line: "\\1 {{ item.value }}"
+        backrefs: yes
+      loop:
+      # XXX There are two UPSNAME lines in apcupsd.conf.
+      #     We want the first match but lineinfile picks
+      #     the last match.
+      #- key: UPSNAME
+      #  value: "{{ inventory_hostname }}"
+      - key: UPSCABLE
+        value: usb
+      - key: UPSTYPE
+        value: usb
+      - key: DEVICE
+        value:
+      tags:
+      - ups
+      - system
+
+    - name: Set email address for power events
+      lineinfile:
+        path: /etc/apcupsd/apccontrol
+        regexp: "^export SYSADMIN="
+        line: "export SYSADMIN={{ mail_address }}"
+      tags:
+      - ups
+      - system
+
+    - name: Add custom power handling scripts
+      template:
+        src: "{{ item }}.j2"
+        dest: "/etc/apcupsd/{{ item }}"
+        mode: u=rwx,g=rx,o=rx
+        owner: root
+        group: root
+      loop:
+      - onbattery
+      - offbattery
+      tags:
+      - ups
+      - system
+
+    - name: Enable and restart apcupsd.service
+      systemd:
+        name: apcupsd.service
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+      tags:
+      - ups
       - system
 
     #-----------------------
