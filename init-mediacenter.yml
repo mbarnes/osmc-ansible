@@ -379,9 +379,23 @@
     - name: Add mdadm package
       apt:
         name: mdadm
+      register: mdadm_install
       tags:
       - storage
       - system
+
+    - name: Reboot to create RAID device
+      shell: sleep 2 && systemctl reboot
+      async: 1
+      poll: 0
+      when: mdadm_install.changed
+      ignore_errors: true
+
+    - name: Wait for host to become reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 600
+      when: mdadm_install.changed
 
     - name: Scan for software RAID devices
       command: mdadm --detail --scan
