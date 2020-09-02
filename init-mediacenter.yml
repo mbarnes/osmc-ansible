@@ -23,9 +23,6 @@
   # Gather facts later as root
   gather_facts: no
 
-  environment:
-    PATH: "/sbin:/usr/sbin:{{ ansible_env.PATH }}"
-
   vars:
 
     privateinternetaccess_server: "US Chicago"
@@ -68,6 +65,9 @@
 
   - name: System-level tasks
     become: yes
+    become_method: sudo
+    # The -i is necessary to use root's PATH.
+    become_flags: -H -S -n -i
     block:
 
     - name: Add fact collection dependencies
