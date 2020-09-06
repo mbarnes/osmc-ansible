@@ -590,6 +590,8 @@
         value: ${MainDir}/intermediate
       - key: WebDir
         value: ${AppDir}/webui
+      - key: ConfigTemplate
+        value: ${AppDir}/webui/nzbget.conf.template
       - key: Server1.Name
         value: Newshosting
       - key: Server1.Host
