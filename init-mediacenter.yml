@@ -188,6 +188,7 @@
         group: root
       no_log: True
       tags:
+      - docker
       - mta
       - ups
       - storage
@@ -197,6 +198,7 @@
       shell: "msmtp --pretend < /dev/null | grep ^from | awk '{ print $3 }'"
       register: msmtp_from
       tags:
+      - docker
       - mta
       - ups
       - storage
@@ -205,6 +207,7 @@
     - set_fact:
         mail_address: "{{ msmtp_from.stdout }}"
       tags:
+      - docker
       - mta
       - ups
       - storage
