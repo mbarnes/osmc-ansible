@@ -564,6 +564,14 @@
       - docker
       - system
 
+    - name: Add pihole configuration
+      copy:
+        src: setupVars.conf
+        dest: /etc/pihole/setupVars.conf
+      tags:
+      - docker
+      - system
+
     - name: Download default nzbget configuration
       get_url:
         url: https://raw.githubusercontent.com/nzbget/nzbget/develop/nzbget.conf
