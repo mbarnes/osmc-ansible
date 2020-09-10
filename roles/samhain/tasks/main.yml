@@ -1,0 +1,114 @@
+---
+- name: Set base GnuPG command
+  set_fact:
+    samhain_gpg_command: "{{ samhain_gpg_binary_path }} --with-colons --status-fd=1"
+
+- name: Import Samhain Labs' GPG key
+  command: "{{ samhain_gpg_command }} --keyserver {{ samhain_gpg_keyserver_host }} --receive-keys 0F571F6C"
+  register: samhain_gpg_result
+
+- debug:
+    var: samhain_gpg_result
+    verbosity: 1
+
+- name: Import user's GPG key
+  command: "{{ samhain_gpg_command }} --keyserver {{ samhain_gpg_keyserver_host }} --receive-keys {{ samhain_gpg_user_keyid }}"
+  register: samhain_gpg_result
+
+- debug:
+    var: samhain_gpg_result
+    verbosity: 1
+
+- name: List user's GPG key with fingerprints
+  command: "{{ samhain_gpg_command }} --fingerprint {{ samhain_gpg_user_keyid }}"
+  register: samhain_gpg_result
+  changed_when: false
+
+- debug:
+    var: samhain_gpg_result
+    verbosity: 1
+
+- name: Gather all fingerprint lines in output
+  set_fact:
+    samhain_gpg_user_fingerprints: "{{ samhain_gpg_user_fingerprints | default([]) + [ item.split(':')[9] ] }}"
+  loop: "{{ samhain_gpg_result.stdout_lines }}"
+  when: item.startswith("fpr")
+  no_log: true
+
+- name: Create temporary directory
+  tempfile:
+    state: directory
+  register: samhain_temporary
+  #notify: Delete temporary directory
+
+- debug:
+    var: samhain_temporary
+    verbosity: 1
+
+- name: Download source tarball
+  unarchive:
+    dest: "{{ samhain_temporary.path }}"
+    src: "{{ samhain_source_tarball_url }}"
+    remote_src: yes
+
+- name: Discover signed tarball name
+  find:
+    paths: "{{ samhain_temporary.path }}"
+    patterns: 'samhain-*.tar.gz'
+  register: samhain_find_tarball_result
+
+- set_fact:
+    samhain_tarball_path: "{{ samhain_find_tarball_result.files[0].path }}"
+
+- name: Verify signed tarball
+  command: "{{ samhain_gpg_command }} --verify {{ samhain_tarball_path }}.asc {{ samhain_tarball_path }}"
+  register: samhain_gpg_result
+
+- debug:
+    var: samhain_gpg_result
+    verbosity: 1
+
+- name: Extract signed tarball
+  unarchive:
+    dest: "{{ samhain_temporary.path }}"
+    src: "{{ samhain_tarball_path }}"
+    remote_src: yes
+
+- name: Discover root of source tree
+  find:
+    paths: "{{ samhain_temporary.path }}"
+    file_type: directory
+  register: samhain_find_source_tree_result
+
+- set_fact:
+    samhain_source_tree_path: "{{ samhain_find_source_tree_result.files[0].path }}"
+
+- name: Configure the source
+  command:
+    argv:
+    - "{{ samhain_source_tree_path }}/configure"
+    - "--with-gpg={{ samhain_gpg_binary_path }}"
+    - "--with-fp={{ samhain_gpg_user_fingerprints[0] }}"
+    - "--enable-install-name={{ samhain_install_name }}"
+    chdir: "{{ samhain_source_tree_path }}"
+
+- name: Build the source
+  make:
+    chdir: "{{ samhain_source_tree_path }}"
+
+- name: Install the binary
+  make:
+    # install-light skips man pages
+    target: install-light
+    chdir: "{{ samhain_source_tree_path }}"
+
+- name: Install a systemd service
+  make:
+    target: install-boot
+    chdir: "{{ samhain_source_tree_path }}"
+
+- name: Enable and start the systemd service
+  systemd:
+    name: "{{ samhain_install_name }}".service
+    enabled: yes
+    state: started

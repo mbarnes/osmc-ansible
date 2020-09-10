@@ -1,0 +1,5 @@
+---
+samhain_gpg_binary_path: /usr/bin/gpg
+samhain_gpg_keyserver_host: keys.gnupg.net
+samhain_source_tarball_url: https://www.la-samhna.de/samhain/samhain-current.tar.gz
+samhain_install_name: samhain

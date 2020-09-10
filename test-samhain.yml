@@ -1,0 +1,15 @@
+#!/usr/bin/ansible-playbook
+---
+- hosts: localhost
+  become: yes
+  connection: local
+  vars:
+    gpg_keyid: 75813A59
+
+  tasks:
+
+  - name: Run samhain role
+    import_role:
+      name: samhain
+    vars:
+      samhain_gpg_user_keyid: "{{ gpg_keyid }}"
