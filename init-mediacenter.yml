@@ -148,6 +148,7 @@
         - bash-completion
         - bsd-mailx
         - command-not-found
+        - curlftpfs
         - dnsutils
         - docker-ce
         - git
@@ -468,6 +469,46 @@
           name: mdmonitor.service
           enabled: yes
           state: restarted
+
+    - name: Add .netrc file
+      copy:
+        content: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          66343036353631613132303062353435613162373463313533366234396433643266393934636536
+          6563656336303066353535336437666564336139333961640a316431333537326464633161333361
+          36616236306663383863303730343239393063323438303464306462396333353934323533376330
+          3463393539383937350a666561373033383136323061336662346530313065643135383363633765
+          30646535343462306466356637353762333930383664363034383435326665636535333861306661
+          62383439653138333635333531343339626464616230303534326163303031353666663535306639
+          37383130663464633936383832663331633566313266653636613661323534633166336539613265
+          37653439623335643230
+        dest: /root/.netrc
+        mode: u=rw,g=,o=
+        owner: root
+        group: root
+      no_log: True
+      tags:
+      - storage
+      - system
+
+    - name: Create a mount point for the router's FTP server
+      file:
+        path: /mnt/router
+        state: directory
+
+    # The ASUS router has two USB ports that I occasionally
+    # use to transfer files from the storage array to a USB
+    # thumb drive. The router only activates the FTP server
+    # when a storage device is plugged into a USB port, and
+    # therefore the FTP file system can not stay mounted at
+    # all times.  Hence the "noauto" option.
+    - name: Define the router's FTP server as a file system
+      mount:
+        src: curlftpfs#router.asus.com
+        path: /mnt/router
+        fstype: fuse
+        opts: "noauto,allow_other,uid={{ ansible_env.SUDO_UID }},gid={{ ansible_env.SUDO_GID }}"
+        state: present
 
     #----------------------
     # Docker Configuration
