@@ -714,11 +714,11 @@
     tags:
     - user
 
-  - name: Copy hidden files to home directory
+  - name: Copy dotfiles to home directory
     copy:
       src: "{{ item }}"
       dest: "{{ ansible_user_dir }}/.{{ item | basename }}"
-    with_fileglob: "home/hidden/*"
+    with_fileglob: "home/dotfiles/*"
     tags:
     - user
 
