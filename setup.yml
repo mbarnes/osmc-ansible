@@ -722,7 +722,22 @@
     tags:
     - user
 
+  - name: Copy XDG_CONFIG_HOME directory
+    copy:
+      src: home/config/
+      dest: "{{ ansible_user_dir }}/.config/"
+      mode: u=rw,g=r,o=r
+    tags:
+    - user
+
   - name: Add powerline to vim
     command: vim-addons install powerline
+    tags:
+    - user
+
+  - name: Clone vim-colors-solarized as a Vim package
+    git:
+      repo: https://github.com/altercation/vim-colors-solarized.git
+      dest: "{{ ansible_user_dir }}/.vim/pack/plugins/opt/vim-colors-solarized"
     tags:
     - user

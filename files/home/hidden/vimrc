@@ -3,11 +3,10 @@
 " Enable plugins for specific file types
 filetype plugin on
 
-" Enable syntax highlighting
+" Use the solarized colorscheme
 syntax enable
-
-" Use color palette for a dark background
 set background=dark
+colorscheme solarized
 
 " Use UTF-8 encoding
 set encoding=utf-8
