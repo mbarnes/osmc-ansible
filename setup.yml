@@ -5,7 +5,7 @@
 # consisting of pre-installed OSMC devices with networking and SSH
 # service available.
 #
-# Usage: ./init-mediacenter.yml --ask-vault-pass
+# Usage: ./setup.yml --ask-vault-pass
 #
 # Available tags:
 # - system    : Run all system-level tasks (as root)
