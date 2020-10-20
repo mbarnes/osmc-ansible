@@ -138,6 +138,11 @@
       - apt
       - system
 
+    # XXX Workaround for Docker on Debian Buster
+    #     https://github.com/moby/libnetwork/issues/2331
+    - name: Link iptables to iptables-legacy
+      command: update-alternatives --set iptables /usr/sbin/iptables-legacy
+
     # XXX Hold off on installing mdadm.
     #     See Storage Configuration note below.
     - name: Add required packages
@@ -148,9 +153,11 @@
         - bash-completion
         - bsd-mailx
         - command-not-found
+        - containerd.io
         - curlftpfs
         - dnsutils
         - docker-ce
+        - docker-ce-cli
         - git
         - htop
         - lsof
