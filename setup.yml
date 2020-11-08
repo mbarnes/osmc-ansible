@@ -31,6 +31,10 @@
     storage_fstype: ext4
     storage_options: auto
 
+    # For system-level tasks that need the non-root user
+    osmc_user_uid: "{{ ansible_env.SUDO_UID }}"
+    osmc_user_gid: "{{ ansible_env.SUDO_GID }}"
+
     pihole_host_dns_port: 53
     pihole_host_http_port: 8080
     pihole_host_https_port: 8443
@@ -514,7 +518,7 @@
         src: curlftpfs#router.asus.com
         path: /mnt/router
         fstype: fuse
-        opts: "noauto,allow_other,uid={{ ansible_env.SUDO_UID }},gid={{ ansible_env.SUDO_GID }}"
+        opts: "noauto,allow_other,uid={{ osmc_user_uid }},gid={{ osmc_user_gid }}"
         state: present
 
     #----------------------
@@ -583,17 +587,17 @@
         owner: root
         group: root
       - path: "{{ nzbget_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
       - path: "{{ sonarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
       - path: "{{ radarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
       - path: "{{ bazarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
       tags:
       - docker
       - system
@@ -628,8 +632,8 @@
         url: https://raw.githubusercontent.com/nzbget/nzbget/develop/nzbget.conf
         dest: "{{ nzbget_config_dir }}/nzbget.conf"
         mode: u=rw,g=r,o=r
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
         force: no
       tags:
       - docker
