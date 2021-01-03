@@ -172,6 +172,7 @@
         - python-docker
         - python3-powerline
         - rsync
+        - smartmontools
         - tmux
         - unzip
         - usbutils
