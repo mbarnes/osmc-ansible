@@ -474,6 +474,7 @@
           path: "{{ storage_path }}"
           fstype: "{{ storage_fstype }}"
           opts: "{{ storage_options }}"
+          passno: 2
           state: mounted
 
       - name: Restart mdmonitor.service
