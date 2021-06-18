@@ -25,7 +25,7 @@
 
   vars:
 
-    privateinternetaccess_server: "US Chicago"
+    privateinternetaccess_server: "us_chicago"
 
     storage_path: /mnt/storage
     storage_fstype: ext4
