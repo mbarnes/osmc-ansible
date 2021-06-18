@@ -552,10 +552,10 @@
         pull: yes
       loop:
       - pihole/pihole
-      - linuxserver/nzbget
-      - linuxserver/sonarr
-      - linuxserver/radarr
-      - linuxserver/bazarr
+      - ghcr.io/linuxserver/nzbget
+      - ghcr.io/linuxserver/sonarr
+      - ghcr.io/linuxserver/radarr
+      - ghcr.io/linuxserver/bazarr
       tags:
       - docker
       - system
