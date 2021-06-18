@@ -6,7 +6,7 @@ export PAGER=less
 export PRINTER=Dell_Laser_Printer_1700
 
 alias restart-vpn="sudo systemctl restart openvpn@default.service"
-alias watch-storage="watch -n5 \"cat /proc/mdstat; echo; sudo mdadm --detail /dev/md/osmc-storage-array1\""
+alias watch-storage="watch -n5 \"cat /proc/mdstat; echo; sudo mdadm --detail \$(ls /dev/disk/by-id/md-* | head --lines 1)\""
 alias pull-images="for repository in \$(docker image ls --format \"{{.Repository}}\" | sort | uniq); do docker pull \$repository:latest; done"
 
 # Powerline Configuration
