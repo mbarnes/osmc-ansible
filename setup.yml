@@ -51,6 +51,9 @@
     bazarr_host_port: 6767
     bazarr_config_dir: /var/lib/bazarr
 
+    mariadb_host_port: 3306
+    mariadb_config_dir: /var/lib/mariadb
+
   tasks:
 
   - name: Verify vault secret
@@ -170,6 +173,7 @@
         - openvpn
         - powerline
         - python-docker
+        - python-pymysql
         - python3-powerline
         - rsync
         - smartmontools
@@ -556,6 +560,7 @@
       - ghcr.io/linuxserver/sonarr
       - ghcr.io/linuxserver/radarr
       - ghcr.io/linuxserver/bazarr
+      - ghcr.io/linuxserver/mariadb:alpine
       tags:
       - docker
       - system
@@ -600,6 +605,9 @@
       - path: "{{ bazarr_config_dir }}"
         owner: "{{ osmc_user_uid }}"
         group: "{{ osmc_user_gid }}"
+      - path: "{{ mariadb_config_dir }}"
+        owner: "{{ osmc_user_uid }}"
+        group: "{{ osmc_user_gid }}"
       tags:
       - docker
       - system
@@ -617,6 +625,7 @@
       - sonarr.service
       - radarr.service
       - bazarr.service
+      - mariadb.service
       tags:
       - docker
       - system
@@ -707,8 +716,24 @@
       - radarr.service
       - sonarr.service
       - bazarr.service
+      - mariadb.service
       tags:
       - docker
+      - system
+
+    # Kodi database does not need security.
+    # XXX ignore_errors needed to work around
+    #     https://github.com/ansible/ansible/issues/40091
+    #     Fixed in 2.7.9 but Debian Buster only has 2.7.7.
+    - name: Create a MariaDB user for Kodi
+      mysql_user:
+        name: kodi
+        host: '%'
+        password: kodi
+        priv: '*.*:ALL'
+        check_implicit_admin: yes
+      ignore_errors: true
+      tags:
       - system
 
   #-------------------------------------
@@ -719,6 +744,13 @@
     setup:
     tags:
     - always
+
+  - name: Copy advancedsettings.xml for Kodi
+    template:
+      src: "advancedsettings.xml.j2"
+      dest: "{{ ansible_user_dir }}/.kodi/userdata/advancedsettings.xml"
+    tags:
+    - user
 
   - name: Clone retrOSMCmk2 repo for RetroPie installer
     git:
