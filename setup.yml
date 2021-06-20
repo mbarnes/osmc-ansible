@@ -56,6 +56,13 @@
 
   tasks:
 
+  - name: Check Ansible version
+    assert:
+      that: "ansible_version.full is version('2.9', '>=')"
+      msg: "This playbook requires Ansible 2.9 or later"
+    tags:
+    - always
+
   - name: Verify vault secret
     set_fact:
       vault_test: !vault |
@@ -97,6 +104,7 @@
     - name: Set hostname to match inventory
       hostname:
         name: "{{ inventory_hostname }}"
+        use: systemd
       tags:
       - system
 
@@ -478,7 +486,7 @@
           path: "{{ storage_path }}"
           fstype: "{{ storage_fstype }}"
           opts: "{{ storage_options }}"
-          passno: 2
+          passno: "2"
           state: mounted
 
       - name: Restart mdmonitor.service
@@ -549,11 +557,10 @@
       - docker
       - system
 
-    # FIXME Revise for Ansible 2.8 or later
     - name: Pull Docker images for various services
       docker_image:
         name: "{{ item }}"
-        pull: yes
+        source: pull
       loop:
       - pihole/pihole
       - ghcr.io/linuxserver/nzbget
@@ -721,10 +728,7 @@
       - docker
       - system
 
-    # Kodi database does not need security.
-    # XXX ignore_errors needed to work around
-    #     https://github.com/ansible/ansible/issues/40091
-    #     Fixed in 2.7.9 but Debian Buster only has 2.7.7.
+    # Kodi database does not need to be secure.
     - name: Create a MariaDB user for Kodi
       mysql_user:
         name: kodi
@@ -732,7 +736,14 @@
         password: kodi
         priv: '*.*:ALL'
         check_implicit_admin: yes
-      ignore_errors: true
+      # XXX Client connections are flaky immediately after a restart.
+      #     Perhaps an issue with the linuxserver/mariadb:alpine image?
+      #     Tried waiting for the host port to open, but still flaky.
+      #     So resorting to delayed retries.  Seems to work.
+      retries: 3
+      delay: 3
+      register: result
+      until: result is not failed
       tags:
       - system
 
