@@ -520,6 +520,9 @@
       file:
         path: /mnt/router
         state: directory
+      tags:
+      - storage
+      - system
 
     # The ASUS router has two USB ports that I occasionally
     # use to transfer files from the storage array to a USB
@@ -534,6 +537,9 @@
         fstype: fuse
         opts: "noauto,allow_other,uid={{ osmc_user_uid }},gid={{ osmc_user_gid }}"
         state: present
+      tags:
+      - storage
+      - system
 
     #----------------------
     # Docker Configuration
