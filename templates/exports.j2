@@ -1,0 +1,3 @@
+"{{ storage_path }}/Movies"    {{ lookup('dig', inventory_hostname) }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)
+"{{ storage_path }}/Music"     {{ lookup('dig', inventory_hostname) }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)
+"{{ storage_path }}/TV Shows"  {{ lookup('dig', inventory_hostname) }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)

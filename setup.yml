@@ -25,6 +25,8 @@
 
   vars:
 
+    local_area_network_cidr: "192.168.1.0/24"
+
     privateinternetaccess_server: "us_chicago"
 
     storage_path: /mnt/storage
@@ -53,6 +55,12 @@
 
     mariadb_host_port: 3306
     mariadb_config_dir: /var/lib/mariadb
+
+  handlers:
+
+  - name: Reload NFS
+    command: /usr/sbin/exportfs -ra
+    become: yes
 
   tasks:
 
@@ -178,6 +186,7 @@
         - lsof
         - man-db
         - msmtp-mta
+        - nfs-kernel-server
         - openvpn
         - powerline
         - python-docker
@@ -537,6 +546,18 @@
         fstype: fuse
         opts: "noauto,allow_other,uid={{ osmc_user_uid }},gid={{ osmc_user_gid }}"
         state: present
+      tags:
+      - storage
+      - system
+
+    - name: Add NFS exports
+      template:
+        src: exports.j2
+        dest: /etc/exports
+        mode: u=rwx,g=rx,o=rx
+        owner: root
+        group: root
+      notify: Reload NFS
       tags:
       - storage
       - system
