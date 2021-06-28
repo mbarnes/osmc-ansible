@@ -137,6 +137,21 @@
       tags:
       - system
 
+    - name: Update sysctl variables
+      sysctl:
+         name: "{{ item.name }}"
+         value: "{{ item.value }}"
+         sysctl_set: yes
+      loop:
+      # PIA currently does not support IPv6. In order to be sure your VPN
+      # connection does not leak, it is best to disable IPv6 altogether.
+      - name: net.ipv6.conf.all.disable_ipv6
+        value: 1
+      - name: net.ipv6.conf.default.disable_ipv6
+        value: 1
+      tags:
+      - system
+
     # This is for RetroPie
     - name: Add user to "input" group
       user:
