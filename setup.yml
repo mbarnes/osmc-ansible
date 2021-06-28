@@ -218,6 +218,15 @@
       - apt
       - system
 
+    - name: Add required backported packages
+      apt:
+        name:
+        - wireguard
+        default_release: "{{ backports_apt_repository_name }}"
+      tags:
+      - apt
+      - system
+
     - name: Update the command-not-found cache
       command: update-command-not-found
       tags:
