@@ -144,6 +144,21 @@
     # Apt Configuration
     #-------------------
 
+    - name: Set backports repository name
+      set_fact:
+        backports_apt_repository_name: "{{ ansible_lsb.codename }}-backports"
+      tags:
+      - apt
+      - system
+
+    - name: Add backports repository
+      apt_repository:
+        repo: "deb http://deb.debian.org/debian {{ backports_apt_repository_name }} main"
+        filename: "{{ backports_apt_repository_name }}"
+      tags:
+      - apt
+      - system
+
     - name: Add packages to set up Docker's repository
       apt:
         name:
