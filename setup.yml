@@ -237,8 +237,8 @@
       apt:
         name:
         - libseccomp2
+        - wireguard
         default_release: "{{ backports_apt_repository_name }}"
-        state: latest
       tags:
       - apt
       - system
