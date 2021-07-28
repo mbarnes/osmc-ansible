@@ -27,6 +27,13 @@
 
     local_area_network_cidr: "192.168.1.0/24"
 
+    newshosting:
+      host: news.newshosting.com
+      port: 563
+      encryption: "yes"
+      connections: 30
+      retention_days: 4272
+
     privateinternetaccess_server: "us_chicago"
 
     storage_path: /mnt/storage
@@ -705,9 +712,9 @@
       - key: Server1.Name
         value: Newshosting
       - key: Server1.Host
-        value: news.newshosting.com
+        value: "{{ newshosting.host }}"
       - key: Server1.Port
-        value: 563
+        value: "{{ newshosting.port }}"
       - key: Server1.Username
         value: "{{ mail_address }}"
       - key: Server1.Password
@@ -719,11 +726,11 @@
           3434616461303430310a356335393133373835333539306635306438616561313664393739366630
           33646561636136393535386436376164383365656633316662373131363139396630
       - key: Server1.Encryption
-        value: "yes"
+        value: "{{ newshosting.encryption }}"
       - key: Server1.Connections
-        value: 30
+        value: "{{ newshosting.connections }}"
       - key: Server1.Retention
-        value: 4272
+        value: "{{ newshosting.retention_days }}"
       - key: ControlUsername
         value: ""
       - key: ControlPassword
