@@ -31,8 +31,8 @@
       host: news.newshosting.com
       port: 563
       encryption: "yes"
-      connections: 30
-      retention_days: 4272
+      connections: 60
+      retention_days: 4689
 
     privateinternetaccess_server: "us_chicago"
 
