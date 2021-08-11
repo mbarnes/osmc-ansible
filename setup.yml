@@ -225,6 +225,18 @@
       - apt
       - system
 
+    # libseccomp2 : Fixes Alpine-based LinuxServer.io images
+    #               https://docs.linuxserver.io/faq#libseccomp
+    - name: Add required backported packages
+      apt:
+        name:
+        - libseccomp2
+        default_release: "{{ backports_apt_repository_name }}"
+        state: latest
+      tags:
+      - apt
+      - system
+
     - name: Update the command-not-found cache
       command: update-command-not-found
       tags:
