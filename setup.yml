@@ -44,22 +44,28 @@
     osmc_user_uid: "{{ ansible_env.SUDO_UID }}"
     osmc_user_gid: "{{ ansible_env.SUDO_GID }}"
 
+    pihole_image_name: pihole/pihole
     pihole_host_dns_port: 53
     pihole_host_http_port: 8080
     pihole_host_https_port: 8443
 
+    nzbget_image_name: ghcr.io/linuxserver/nzbget
     nzbget_host_port: 6789
     nzbget_config_dir: /var/lib/nzbget
 
+    sonarr_image_name: ghcr.io/linuxserver/sonarr
     sonarr_host_port: 8989
     sonarr_config_dir: /var/lib/sonarr
 
+    radarr_image_name: ghcr.io/linuxserver/radarr
     radarr_host_port: 7878
     radarr_config_dir: /var/lib/radarr
 
+    bazarr_image_name: ghcr.io/linuxserver/bazarr
     bazarr_host_port: 6767
     bazarr_config_dir: /var/lib/bazarr
 
+    mariadb_image_name: ghcr.io/linuxserver/mariadb
     mariadb_host_port: 3306
     mariadb_config_dir: /var/lib/mariadb
 
@@ -623,12 +629,12 @@
         name: "{{ item }}"
         source: pull
       loop:
-      - pihole/pihole
-      - ghcr.io/linuxserver/nzbget
-      - ghcr.io/linuxserver/sonarr
-      - ghcr.io/linuxserver/radarr
-      - ghcr.io/linuxserver/bazarr
-      - ghcr.io/linuxserver/mariadb
+      - "{{ pihole_image_name }}"
+      - "{{ nzbget_image_name }}"
+      - "{{ sonarr_image_name }}"
+      - "{{ radarr_image_name }}"
+      - "{{ bazarr_image_name }}"
+      - "{{ mariadb_image_name }}"
       tags:
       - docker
       - system
