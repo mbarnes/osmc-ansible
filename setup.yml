@@ -13,7 +13,7 @@
 # - apt       : (system) APT Configuration
 # - mta       : (system) Mail Transport Agent (MTA) Configuration
 # - ups       : (system) Uninterruptible Power Supply (UPS) Configuration
-# - vpn       : (system) OpenVPN Configuration
+# - vpn       : (system) Virtual Private Network (VPN) Configuration
 # - storage   : (system) Storage Configuration
 # - docker    : (system) Docker Configuration
 #
@@ -230,7 +230,6 @@
         - man-db
         - msmtp-mta
         - nfs-kernel-server
-        - openvpn
         - powerline
         - python-docker
         - python-pymysql
@@ -362,58 +361,14 @@
       - ups
       - system
 
-    #-----------------------
-    # OpenVPN Configuration
-    #-----------------------
+    #---------------------------------------------
+    # Virtual Private Network (VPN) Configuration
+    #---------------------------------------------
 
-    - name: Create directory for openvpn files
-      file:
-        path: /etc/openvpn/pia
-        state: directory
-      register: pia
-      tags:
-      - vpn
-      - system
-
-    - name: Download openvpn files for privateinternetaccess
-      unarchive:
-        remote_src: yes
-        src: https://www.privateinternetaccess.com/openvpn/openvpn.zip
-        dest: "{{ pia.path }}"
-        creates: "{{ pia.path }}/ca.rsa.2048.crt"
-      tags:
-      - vpn
-      - system
-
-    - name: List openvpn files for privateinternetaccess
-      find:
-        paths: "{{ pia.path }}"
-        patterns: "*.ovpn"
-      register: pia_config
-      tags:
-      - vpn
-      - system
-
-    - name: Tweak openvpn files to use a credentials file
-      lineinfile:
-        path: "{{ item }}"
-        line: auth-user-pass pia.credentials
-        regexp: ^auth-user-pass
-      loop: "{{ pia_config.files | map(attribute='path') | list }}"
-      tags:
-      - vpn
-      - system
-
-    - name: Add privateinternetaccess credentials
+    - name: Add WireGuard configuration
       copy:
-        content: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          65386633353866633366616662373861323433613133393535653132633261343562373336353431
-          6537366332643536623536323634336432393731396433660a323030396466396433613661366465
-          32643231373963616335623439643131653966323536336534663438373464336266326662343738
-          6361343139306134610a663139653132386363336663356436656631353266346361343037383665
-          30613334343663356166333863626462373133623733306464306433613662376535
-        dest: /etc/openvpn/pia.credentials
+        src: pia.conf
+        dest: /etc/wireguard/pia.conf
         mode: u=rw,g=,o=
         owner: root
         group: root
@@ -422,18 +377,9 @@
       - vpn
       - system
 
-    - name: Link openvpn configuration to the preferred server
-      file:
-        src: "{{ pia.path }}/{{ privateinternetaccess_server }}.ovpn"
-        dest: /etc/openvpn/default.conf
-        state: link
-      tags:
-      - vpn
-      - system
-
-    - name: Enable and restart openvpn.service
+    - name: Enable and restart wg-quick@pia.service
       systemd:
-        name: openvpn.service
+        name: wg-quick@pia.service
         enabled: yes
         state: restarted
         daemon_reload: yes
