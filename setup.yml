@@ -69,6 +69,19 @@
     mariadb_host_port: 3306
     mariadb_config_dir: /var/lib/mariadb
 
+    rss_bridge_image_name: rssbridge/rss-bridge
+    rss_bridge_host_port: 3000
+    rss_bridge_whitelist: /etc/rss-bridge-whitelist.txt
+
+    containerized_services:
+    - pihole.service
+    - nzbget.service
+    - sonarr.service
+    - radarr.service
+    - bazarr.service
+    - mariadb.service
+    - rss-bridge.service
+
   handlers:
 
   - name: Reload NFS
@@ -635,6 +648,7 @@
       - "{{ radarr_image_name }}"
       - "{{ bazarr_image_name }}"
       - "{{ mariadb_image_name }}"
+      - "{{ rss_bridge_image_name }}"
       tags:
       - docker
       - system
@@ -693,13 +707,7 @@
         mode: u=rw,g=r,o=r
         owner: root
         group: root
-      loop:
-      - pihole.service
-      - nzbget.service
-      - sonarr.service
-      - radarr.service
-      - bazarr.service
-      - mariadb.service
+      loop: "{{ containerized_services }}"
       tags:
       - docker
       - system
@@ -772,6 +780,22 @@
       - docker
       - system
 
+    - name: Set rss-bridge whitelist
+      copy:
+        content: |
+          Facebook
+          Flickr
+          Identica
+          Instagram
+          Pinterest
+          Twitter
+          Wikipedia
+          Youtube
+        dest: "{{ rss_bridge_whitelist }}"
+      tags:
+      - docker
+      - system
+
     - name: Reload systemd daemon
       systemd:
         daemon_reload: yes
@@ -784,13 +808,7 @@
         name: "{{ item }}"
         enabled: yes
         state: restarted
-      loop:
-      - pihole.service
-      - nzbget.service
-      - radarr.service
-      - sonarr.service
-      - bazarr.service
-      - mariadb.service
+      loop: "{{ containerized_services }}"
       tags:
       - docker
       - system
