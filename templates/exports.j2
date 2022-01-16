@@ -2,3 +2,4 @@
 "{{ storage_path }}/Movies"         {{ inventory_ipv4_address }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)
 "{{ storage_path }}/Music"          {{ inventory_ipv4_address }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)
 "{{ storage_path }}/TV Shows"       {{ inventory_ipv4_address }}(rw,insecure,no_subtree_check)  {{ local_area_network_cidr }}(ro,insecure,no_subtree_check)
+"{{ kodi_userdata_path }}"   {{ local_area_network_cidr }}(rw,insecure,no_subtree_check)

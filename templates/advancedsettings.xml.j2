@@ -17,4 +17,22 @@
     <importwatchedstate>true</importwatchedstate>
     <importresumepoint>true</importresumepoint>
   </videolibrary>
+  <pathsubstitution>
+    <substitute>
+      <from>special://profile/favourites.xml</from>
+      <to>nfs://{{ inventory_ipv4_address }}{{ kodi_userdata_path }}/favourites.xml</to>
+    </substitute>
+    <substitute>
+      <from>special://profile/playlists/</from>
+      <to>nfs://{{ inventory_ipv4_address }}{{ kodi_userdata_path }}/playlists/</to>
+    </substitute>
+    <substitute>
+      <from>special://profile/sources.xml</from>
+      <to>nfs://{{ inventory_ipv4_address }}{{ kodi_userdata_path }}/sources.xml</to>
+    </substitute>
+    <substitute>
+      <from>special://profile/Thumbnails/</from>
+      <to>nfs://{{ inventory_ipv4_address }}{{ kodi_userdata_path }}/Thumbnails/</to>
+    </substitute>
+  </pathsubstitution>
 </advancedsettings>

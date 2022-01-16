@@ -83,6 +83,11 @@
     - mariadb.service
     - rss-bridge.service
 
+    # XXX Hard-coding the full path because this is evaluated
+    #     from a system-level task (exports.j2) and the value
+    #     of "ansible_user_dir" in that context is "/root".
+    kodi_userdata_path: "/home/osmc/.kodi/userdata"
+
   handlers:
 
   - name: Reload NFS
@@ -845,7 +850,7 @@
   - name: Copy advancedsettings.xml for Kodi
     template:
       src: "advancedsettings.xml.j2"
-      dest: "{{ ansible_user_dir }}/.kodi/userdata/advancedsettings.xml"
+      dest: "{{ kodi_userdata_path }}/advancedsettings.xml"
     tags:
     - user
 
