@@ -12,7 +12,6 @@ ExecStart=/usr/bin/docker run --rm \
                               -p {{ pihole_host_dns_port }}:53/tcp \
                               -p {{ pihole_host_dns_port }}:53/udp \
                               -p {{ pihole_host_http_port }}:80 \
-                              -p {{ pihole_host_https_port }}:443 \
                               -v /etc/pihole:/etc/pihole \
                               -v /etc/dnsmasq.d:/etc/dnsmasq.d \
                               --dns=127.0.0.1 --dns=1.1.1.1 \

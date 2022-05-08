@@ -48,7 +48,6 @@
     pihole_image_name: pihole/pihole
     pihole_host_dns_port: 53
     pihole_host_http_port: 8080
-    pihole_host_https_port: 8443
 
     nzbget_image_name: ghcr.io/linuxserver/nzbget
     nzbget_host_port: 6789
