@@ -45,6 +45,9 @@
     osmc_user_uid: "{{ ansible_env.SUDO_UID }}"
     osmc_user_gid: "{{ ansible_env.SUDO_GID }}"
 
+    cadvisor_image_name: zcube/cadvisor
+    cadvisor_host_port: 8080
+
     pihole_image_name: pihole/pihole
     pihole_host_dns_port: 53
     pihole_host_http_port: 8053
@@ -74,6 +77,7 @@
     rss_bridge_whitelist: /etc/rss-bridge-whitelist.txt
 
     containerized_services:
+    - cadvisor.service
     - pihole.service
     - nzbget.service
     - sonarr.service
@@ -647,6 +651,7 @@
         name: "{{ item }}"
         source: pull
       loop:
+      - "{{ cadvisor_image_name }}"
       - "{{ pihole_image_name }}"
       - "{{ nzbget_image_name }}"
       - "{{ sonarr_image_name }}"
