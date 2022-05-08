@@ -9,8 +9,8 @@ RestartSec=30
 
 ExecStart=/usr/bin/docker run --rm \
                               --name=rss-bridge \
-                              -p {{ rss_bridge_host_port }}:80 \
-                              -v {{ rss_bridge_whitelist }}:/app/whitelist.txt \
+                              --publish={{ rss_bridge_host_port }}:80 \
+                              --volume={{ rss_bridge_whitelist }}:/app/whitelist.txt \
                               {{ rss_bridge_image_name }}
 
 ExecStop=/usr/bin/docker stop rss-bridge
