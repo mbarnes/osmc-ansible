@@ -46,33 +46,41 @@
     osmc_user_gid: "{{ ansible_env.SUDO_GID }}"
 
     cadvisor_image_name: zcube/cadvisor
+    cadvisor_memory_limit: 50m
     cadvisor_host_port: 8080
 
     pihole_image_name: pihole/pihole
+    pihole_memory_limit: 100m
     pihole_host_dns_port: 53
     pihole_host_http_port: 8053
 
     nzbget_image_name: ghcr.io/linuxserver/nzbget
+    nzbget_memory_limit: 50m
     nzbget_host_port: 6789
     nzbget_config_dir: /var/lib/nzbget
 
     sonarr_image_name: ghcr.io/linuxserver/sonarr
+    sonarr_memory_limit: 250m
     sonarr_host_port: 8989
     sonarr_config_dir: /var/lib/sonarr
 
     radarr_image_name: ghcr.io/linuxserver/radarr
+    radarr_memory_limit: 250m
     radarr_host_port: 7878
     radarr_config_dir: /var/lib/radarr
 
     bazarr_image_name: ghcr.io/linuxserver/bazarr
+    bazarr_memory_limit: 150m
     bazarr_host_port: 6767
     bazarr_config_dir: /var/lib/bazarr
 
     mariadb_image_name: ghcr.io/linuxserver/mariadb
+    mariadb_memory_limit: 150m
     mariadb_host_port: 3306
     mariadb_config_dir: /var/lib/mariadb
 
     rss_bridge_image_name: rssbridge/rss-bridge
+    rss_bridge_memory_limit: 50m
     rss_bridge_host_port: 3000
     rss_bridge_whitelist: /etc/rss-bridge-whitelist.txt
 
