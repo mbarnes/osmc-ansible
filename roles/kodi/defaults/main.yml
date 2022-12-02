@@ -1,0 +1,7 @@
+---
+mysql_host: "{{ lookup('dig', inventory_hostname) }}"
+mysql_port: 3306
+mysql_user: kodi
+mysql_pass: kodi
+
+nfs_host: "{{ lookup('dig', inventory_hostname) }}"

@@ -1,0 +1,4 @@
+---
+- name: Reload NFS
+  command: /usr/sbin/exportfs -ra
+  become: yes

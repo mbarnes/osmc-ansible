@@ -16,6 +16,9 @@
 # - vpn       : (system) OpenVPN Configuration
 # - storage   : (system) Storage Configuration
 # - docker    : (system) Docker Configuration
+# - common    : (user) Common System and User Configuration
+# - kodi      : (user) Kodi Configuration
+# - retropie  : (user) RetroPie Configuration
 #
 
 - hosts: mediacenter_group
@@ -25,21 +28,13 @@
 
   vars:
 
-    inventory_ipv4_address: "{{ lookup('dig', inventory_hostname) }}"
-    local_area_network_cidr: "192.168.1.0/24"
-
     newshosting:
       host: news.newshosting.com
       port: 563
+      username: mbarnes@fastmail.com
       encryption: "yes"
       connections: 60
       retention_days: 4689
-
-    privateinternetaccess_server: "us_chicago"
-
-    storage_path: /mnt/storage
-    storage_fstype: ext4
-    storage_options: auto
 
     # For system-level tasks that need the non-root user
     osmc_user_uid: "{{ ansible_env.SUDO_UID }}"
@@ -108,13 +103,7 @@
     #     of "ansible_user_dir" in that context is "/root".
     kodi_userdata_path: "/home/osmc/.kodi/userdata"
 
-  handlers:
-
-  - name: Reload NFS
-    command: /usr/sbin/exportfs -ra
-    become: yes
-
-  tasks:
+  pre_tasks:
 
   - name: Check Ansible version
     assert:
@@ -135,6 +124,14 @@
     tags:
     - always
 
+  - name: Gather more facts as root
+    setup:
+    become: yes
+    tags:
+    - always
+
+  tasks:
+
   #------------------------------------
   # Begin system-level tasks (as root)
   #------------------------------------
@@ -146,144 +143,16 @@
     become_flags: -H -S -n -i
     block:
 
-    - name: Add fact collection dependencies
-      apt:
-        name:
-        # Adds "ansible_lsb"
-        - lsb-release
-        # Adds "ansible_lvm"
-        - lvm2
-      tags:
-      - always
-
-    - name: Gather more facts as root
-      setup:
-      tags:
-      - always
-
-    - name: Set hostname to match inventory
-      hostname:
-        name: "{{ inventory_hostname }}"
-        use: systemd
-      tags:
-      - system
-
-    - name: Update 127.0.1.1 hosts entry
-      lineinfile:
-        path: /etc/hosts
-        regexp: '^127\.0\.1\.1'
-        line: "127.0.1.1\t{{ inventory_hostname }}"
-      tags:
-      - system
-
-    # This is for RetroPie
-    - name: Add user to "input" group
-      user:
-        name: "{{ ansible_ssh_user }}"
-        groups: input
-        append: yes
-      tags:
-      - system
-
     #-------------------
     # Apt Configuration
     #-------------------
 
-    - name: Set backports repository name
-      set_fact:
-        backports_apt_repository_name: "{{ ansible_lsb.codename }}-backports"
-      tags:
-      - apt
-      - system
-
-    - name: Add backports repository
-      apt_repository:
-        repo: "deb http://deb.debian.org/debian {{ backports_apt_repository_name }} main"
-        filename: "{{ backports_apt_repository_name }}"
-      tags:
-      - apt
-      - system
-
-    - name: Add packages to set up Docker's repository
-      apt:
-        name:
-        - apt-transport-https
-        - ca-certificates
-        - gnupg-agent
-      tags:
-      - apt
-      - system
-
-    - name: Add Docker's official GPG key
-      apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-      tags:
-      - apt
-      - system
-
-    - name: Add apt repository for Docker
-      apt_repository:
-        repo: "deb https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable"
-      tags:
-      - apt
-      - system
-
-    # XXX Workaround for Docker on Debian Buster
-    #     https://github.com/moby/libnetwork/issues/2331
-    - name: Link iptables to iptables-legacy
-      command: update-alternatives --set iptables /usr/sbin/iptables-legacy
-
-    # XXX Hold off on installing mdadm.
-    #     See Storage Configuration note below.
     - name: Add required packages
       apt:
         name:
-        - apcupsd
-        - apt-file
-        - bash-completion
         - bsd-mailx
-        - command-not-found
         - containerd.io
-        - curlftpfs
-        - dnsutils
-        - docker-ce
-        - docker-ce-cli
-        - git
-        - htop
-        - lsof
-        - man-db
-        - msmtp-mta
-        - nfs-kernel-server
-        - openvpn
-        - powerline
-        - python-docker
         - python-pymysql
-        - python3-powerline
-        - rsync
-        - smartmontools
-        - tmux
-        - unzip
-        - usbutils
-        - vim-addon-manager
-        - vim-nox
-      tags:
-      - apt
-      - system
-
-    # libseccomp2 : Fixes Alpine-based LinuxServer.io images
-    #               https://docs.linuxserver.io/faq#libseccomp
-    - name: Add required backported packages
-      apt:
-        name:
-        - libseccomp2
-        default_release: "{{ backports_apt_repository_name }}"
-        state: latest
-      tags:
-      - apt
-      - system
-
-    - name: Update the command-not-found cache
-      command: update-command-not-found
       tags:
       - apt
       - system
@@ -292,38 +161,10 @@
     # Mail Transport Agent (MTA) Configuration
     #------------------------------------------
 
-    - name: Add msmtp configuration
-      copy:
-        src: msmtprc.vault
-        dest: /etc/msmtprc
-        mode: u=rw,g=,o=
-        owner: root
-        group: root
-      no_log: True
+    - import_role:
+        name: mta
       tags:
-      - docker
       - mta
-      - ups
-      - storage
-      - system
-
-    - name: Extract default address from msmtp
-      shell: "msmtp --pretend < /dev/null | grep ^from | awk '{ print $3 }'"
-      register: msmtp_from
-      tags:
-      - docker
-      - mta
-      - ups
-      - storage
-      - system
-
-    - set_fact:
-        mail_address: "{{ msmtp_from.stdout }}"
-      tags:
-      - docker
-      - mta
-      - ups
-      - storage
       - system
 
     #--------------------------------------------------
@@ -331,57 +172,8 @@
     # For an APC Back-UPS CS 350
     #--------------------------------------------------
 
-    - name: Customize apcupsd configuration
-      lineinfile:
-        path: /etc/apcupsd/apcupsd.conf
-        regexp: "^#?({{ item.key }})"
-        line: "\\1 {{ item.value }}"
-        backrefs: yes
-      loop:
-      # XXX There are two UPSNAME lines in apcupsd.conf.
-      #     We want the first match but lineinfile picks
-      #     the last match.
-      #- key: UPSNAME
-      #  value: "{{ inventory_hostname }}"
-      - key: UPSCABLE
-        value: usb
-      - key: UPSTYPE
-        value: usb
-      - key: DEVICE
-        value:
-      tags:
-      - ups
-      - system
-
-    - name: Set email address for power events
-      lineinfile:
-        path: /etc/apcupsd/apccontrol
-        regexp: "^export SYSADMIN="
-        line: "export SYSADMIN={{ mail_address }}"
-      tags:
-      - ups
-      - system
-
-    - name: Add custom power handling scripts
-      template:
-        src: "{{ item }}.j2"
-        dest: "/etc/apcupsd/{{ item }}"
-        mode: u=rwx,g=rx,o=rx
-        owner: root
-        group: root
-      loop:
-      - onbattery
-      - offbattery
-      tags:
-      - ups
-      - system
-
-    - name: Enable and restart apcupsd.service
-      systemd:
-        name: apcupsd.service
-        enabled: yes
-        state: restarted
-        daemon_reload: yes
+    - import_role:
+        name: ups
       tags:
       - ups
       - system
@@ -390,77 +182,8 @@
     # OpenVPN Configuration
     #-----------------------
 
-    - name: Create directory for openvpn files
-      file:
-        path: /etc/openvpn/pia
-        state: directory
-      register: pia
-      tags:
-      - vpn
-      - system
-
-    - name: Download openvpn files for privateinternetaccess
-      unarchive:
-        remote_src: yes
-        src: https://www.privateinternetaccess.com/openvpn/openvpn.zip
-        dest: "{{ pia.path }}"
-        creates: "{{ pia.path }}/ca.rsa.2048.crt"
-      tags:
-      - vpn
-      - system
-
-    - name: List openvpn files for privateinternetaccess
-      find:
-        paths: "{{ pia.path }}"
-        patterns: "*.ovpn"
-      register: pia_config
-      tags:
-      - vpn
-      - system
-
-    - name: Tweak openvpn files to use a credentials file
-      lineinfile:
-        path: "{{ item }}"
-        line: auth-user-pass pia.credentials
-        regexp: ^auth-user-pass
-      loop: "{{ pia_config.files | map(attribute='path') | list }}"
-      tags:
-      - vpn
-      - system
-
-    - name: Add privateinternetaccess credentials
-      copy:
-        content: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          65386633353866633366616662373861323433613133393535653132633261343562373336353431
-          6537366332643536623536323634336432393731396433660a323030396466396433613661366465
-          32643231373963616335623439643131653966323536336534663438373464336266326662343738
-          6361343139306134610a663139653132386363336663356436656631353266346361343037383665
-          30613334343663356166333863626462373133623733306464306433613662376535
-        dest: /etc/openvpn/pia.credentials
-        mode: u=rw,g=,o=
-        owner: root
-        group: root
-      no_log: True
-      tags:
-      - vpn
-      - system
-
-    - name: Link openvpn configuration to the preferred server
-      file:
-        src: "{{ pia.path }}/{{ privateinternetaccess_server }}.ovpn"
-        dest: /etc/openvpn/default.conf
-        state: link
-      tags:
-      - vpn
-      - system
-
-    - name: Enable and restart openvpn.service
-      systemd:
-        name: openvpn.service
-        enabled: yes
-        state: restarted
-        daemon_reload: yes
+    - import_role:
+        name: vpn
       tags:
       - vpn
       - system
@@ -469,174 +192,8 @@
     # Storage Configuration
     #-----------------------
 
-    # XXX Installing mdadm on a Vero 4K without a mdadm.conf file present
-    #     results in the root partition somehow being re-mounted as read-
-    #     only, which breaks the system.  Upload a mdadm.conf file before
-    #     installing the mdadm package to prevent this.
-
-    - name: Add directory for mdadm configuration
-      file:
-        path: /etc/mdadm
-        state: directory
-      tags:
-      - storage
-      - system
-
-    - name: Add a mdadm configuration
-      template:
-        src: mdadm.conf.j2
-        dest: /etc/mdadm/mdadm.conf
-        mode: u=rw,g=r,o=r
-        owner: root
-        group: root
-        force: no
-      tags:
-      - storage
-      - system
-
-    - name: Add mdadm package
-      apt:
-        name: mdadm
-      register: mdadm_install
-      tags:
-      - storage
-      - system
-
-    - name: Reboot to create RAID device
-      shell: sleep 2 && systemctl reboot
-      async: 1
-      poll: 0
-      when: mdadm_install.changed
-      ignore_errors: true
-
-    - name: Wait for host to become reachable
-      wait_for_connection:
-        delay: 10
-        timeout: 600
-      when: mdadm_install.changed
-
-    - name: Scan for software RAID devices
-      command: mdadm --detail --scan
-      register: mdadm_scan
-      tags:
-      - storage
-      - system
-
-    - set_fact:
-        raid_device_present: "{{ mdadm_scan.stdout_lines | length | bool }}"
-      tags:
-      - storage
-      - system
-
-    - name: Configure software RAID device
-      when: raid_device_present
-      tags:
-      - storage
-      - system
-      block:
-
-      - name: Add scan results to configuration
-        lineinfile:
-          path: /etc/mdadm/mdadm.conf
-          regexp: "^ARRAY "
-          line: "{{ mdadm_scan.stdout_lines[0] }}"
-
-      - name: Find the canonical RAID device path
-        command: "realpath {{ mdadm_scan.stdout_lines[0].split()[1] }}"
-        register: raid_device
-
-      - name: Identify LVM volume group for RAID device
-        set_fact:
-          raid_device_vg: "{{ item.value.vg }}"
-        when:
-        - item.key == raid_device.stdout
-        - item.value.vg is defined
-        loop: "{{ ansible_lvm.pvs | dict2items }}"
-
-      - name: Ensure RAID device has a volume group
-        assert:
-          that: raid_device_vg is defined
-          success_msg: "volume group is {{ raid_device_vg }}"
-
-      - name: Identify LVM logical volume for RAID device
-        set_fact:
-          raid_device_lv: "{{ item.key }}"
-        when: item.value.vg == raid_device_vg
-        loop: "{{ ansible_lvm.lvs | dict2items }}"
-
-      - name: Set device path for mass-storage volume
-        set_fact:
-          storage_device: "{{ '/dev/%s/%s' % (raid_device_vg, raid_device_lv) }}"
-
-      - name: Add fstab entry and mount
-        mount:
-          src: "{{ storage_device }}"
-          path: "{{ storage_path }}"
-          fstype: "{{ storage_fstype }}"
-          opts: "{{ storage_options }}"
-          passno: "2"
-          state: mounted
-
-      - name: Restart mdmonitor.service
-        systemd:
-          name: mdmonitor.service
-          enabled: yes
-          state: restarted
-
-    - name: Add .netrc file
-      copy:
-        content: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66343036353631613132303062353435613162373463313533366234396433643266393934636536
-          6563656336303066353535336437666564336139333961640a316431333537326464633161333361
-          36616236306663383863303730343239393063323438303464306462396333353934323533376330
-          3463393539383937350a666561373033383136323061336662346530313065643135383363633765
-          30646535343462306466356637353762333930383664363034383435326665636535333861306661
-          62383439653138333635333531343339626464616230303534326163303031353666663535306639
-          37383130663464633936383832663331633566313266653636613661323534633166336539613265
-          37653439623335643230
-        dest: /root/.netrc
-        mode: u=rw,g=,o=
-        owner: root
-        group: root
-      no_log: True
-      tags:
-      - storage
-      - system
-
-    - name: Create a mount point for the router's FTP server
-      file:
-        path: /mnt/router
-        state: directory
-      tags:
-      - storage
-      - system
-
-    # The ASUS router has two USB ports that I occasionally
-    # use to transfer files from the storage array to a USB
-    # thumb drive. The router only activates the FTP server
-    # when a storage device is plugged into a USB port, and
-    # therefore the FTP file system can not stay mounted at
-    # all times.  Hence the "noauto" option.
-    - name: Define the router's FTP server as a file system
-      mount:
-        src: curlftpfs#router.asus.com
-        path: /mnt/router
-        fstype: fuse
-        opts: "noauto,allow_other,uid={{ osmc_user_uid }},gid={{ osmc_user_gid }}"
-        state: present
-      tags:
-      - storage
-      - system
-
-    - name: Add NFS exports
-      template:
-        src: exports.j2
-        dest: /etc/exports
-        mode: u=rwx,g=rx,o=rx
-        owner: root
-        group: root
-      notify: Reload NFS
+    - import_role:
+        name: storage
       tags:
       - storage
       - system
@@ -645,20 +202,8 @@
     # Docker Configuration
     #----------------------
 
-    - name: Add user to "docker" group
-      user:
-        name: "{{ ansible_ssh_user }}"
-        groups: docker
-        append: yes
-      tags:
-      - docker
-      - system
-
-    - name: Enable and start docker.service
-      systemd:
-        name: docker.service
-        enabled: yes
-        state: started
+    - import_role:
+        name: docker
       tags:
       - docker
       - system
@@ -784,7 +329,7 @@
       - key: Server1.Port
         value: "{{ newshosting.port }}"
       - key: Server1.Username
-        value: "{{ mail_address }}"
+        value: "{{ newshosting.username }}"
       - key: Server1.Password
         value: !vault |
           $ANSIBLE_VAULT;1.1;AES256
@@ -879,44 +424,24 @@
     tags:
     - always
 
-  - name: Copy advancedsettings.xml for Kodi
-    template:
-      src: "advancedsettings.xml.j2"
-      dest: "{{ kodi_userdata_path }}/advancedsettings.xml"
+  - import_role:
+      name: common
     tags:
+    - common
     - user
 
-  - name: Clone retrOSMCmk2 repo for RetroPie installer
-    git:
-      repo: https://github.com/hissingshark/retrOSMCmk2.git
-      dest: "{{ ansible_user_dir }}/retrOSMCmk2"
+  - import_role:
+      name: kodi
+    vars:
+      mysql_host: "{{ lookup('dig', inventory_hostname) }}"
+      mysql_port: "{{ mariadb_host_port }}"
+      nfs_host: "{{ lookup('dig', inventory_hostname) }}"
     tags:
+    - kodi
     - user
 
-  - name: Copy dotfiles to home directory
-    copy:
-      src: "{{ item }}"
-      dest: "{{ ansible_user_dir }}/.{{ item | basename }}"
-    with_fileglob: "home/dotfiles/*"
+  - import_role:
+      name: retropie
     tags:
-    - user
-
-  - name: Copy XDG_CONFIG_HOME directory
-    copy:
-      src: home/config/
-      dest: "{{ ansible_user_dir }}/.config/"
-      mode: u=rw,g=r,o=r
-    tags:
-    - user
-
-  - name: Add powerline to vim
-    command: vim-addons install powerline
-    tags:
-    - user
-
-  - name: Clone vim-colors-solarized as a Vim package
-    git:
-      repo: https://github.com/altercation/vim-colors-solarized.git
-      dest: "{{ ansible_user_dir }}/.vim/pack/plugins/opt/vim-colors-solarized"
-    tags:
+    - retropie
     - user
