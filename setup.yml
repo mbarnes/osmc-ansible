@@ -74,11 +74,6 @@
     mariadb_host_port: 3306
     mariadb_config_dir: /var/lib/mariadb
 
-    rss_bridge_image_name: rssbridge/rss-bridge
-    rss_bridge_memory_limit: 50m
-    rss_bridge_host_port: 3000
-    rss_bridge_whitelist: /etc/rss-bridge-whitelist.txt
-
     containerized_services:
     - cadvisor.service
     - pihole.service
@@ -87,7 +82,6 @@
     - radarr.service
     - bazarr.service
     - mariadb.service
-    - rss-bridge.service
 
     # .NET / Mono based containers gradually consume memory
     # over time and need periodic restarts.  The memory limit
@@ -220,7 +214,6 @@
       - "{{ radarr_image_name }}"
       - "{{ bazarr_image_name }}"
       - "{{ mariadb_image_name }}"
-      - "{{ rss_bridge_image_name }}"
       tags:
       - docker
       - system
@@ -348,22 +341,6 @@
         value: ""
       - key: ControlPassword
         value: ""
-      tags:
-      - docker
-      - system
-
-    - name: Set rss-bridge whitelist
-      copy:
-        content: |
-          Facebook
-          Flickr
-          Identica
-          Instagram
-          Pinterest
-          Twitter
-          Wikipedia
-          Youtube
-        dest: "{{ rss_bridge_whitelist }}"
       tags:
       - docker
       - system
