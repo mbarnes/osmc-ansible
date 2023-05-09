@@ -277,6 +277,16 @@
       - docker
       - system
 
+    # DNS proxy binds port 53 and prevents pihole container from starting.
+    - name: Disable connman DNS proxy
+      lineinfile:
+        path: /etc/connman.prefs
+        regexp: "^dnsproxy="
+        line: "dnsproxy=no"
+      tags:
+      - docker
+      - system
+
     - name: Add pihole configuration
       copy:
         src: setupVars.conf
