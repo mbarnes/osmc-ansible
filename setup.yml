@@ -28,6 +28,9 @@
 
   vars:
 
+    network_cidr: "{{ (local_area_network + '/' + local_area_netmask) | ipaddr('net') }}"
+    host_ip_addr: "{{ ansible_all_ipv4_addresses | ipaddr(network_cidr) | first }}"
+
     newshosting:
       host: news.newshosting.com
       port: 563
@@ -146,6 +149,7 @@
         name:
         - bsd-mailx
         - containerd.io
+        - python3-netaddr
         - python3-pymysql
       tags:
       - apt
@@ -188,6 +192,9 @@
 
     - import_role:
         name: storage
+      vars:
+        nfs_exports_rw: "{{ host_ip_addr }}"
+        nfs_exports_ro: "{{ network_cidr }}"
       tags:
       - storage
       - system
@@ -420,9 +427,9 @@
   - import_role:
       name: kodi
     vars:
-      mysql_host: "{{ lookup('dig', inventory_hostname) }}"
+      mysql_host: "{{ host_ip_addr }}"
       mysql_port: "{{ mariadb_host_port }}"
-      nfs_host: "{{ lookup('dig', inventory_hostname) }}"
+      nfs_host: "{{ host_ip_addr }}"
     tags:
     - kodi
     - user
