@@ -28,8 +28,8 @@
 
   vars:
 
-    network_cidr: "{{ (local_area_network + '/' + local_area_netmask) | ipaddr('net') }}"
-    host_ip_addr: "{{ ansible_all_ipv4_addresses | ipaddr(network_cidr) | first }}"
+    network_cidr: "{{ (local_area_network + '/' + local_area_netmask) | ansible.utils.ipaddr('net') }}"
+    host_ip_addr: "{{ ansible_all_ipv4_addresses | ansible.utils.ipaddr(network_cidr) | first }}"
 
     newshosting:
       host: news.newshosting.com
