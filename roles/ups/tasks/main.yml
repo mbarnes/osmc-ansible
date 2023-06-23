@@ -25,12 +25,14 @@
       value: usb
     - key: DEVICE
       value: ""
+    notify: Restart apcupsd
 
   - name: Set email address for power events
     lineinfile:
       path: /etc/apcupsd/apccontrol
       regexp: "^export SYSADMIN="
       line: "export SYSADMIN={{ mta_destination_address }}"
+    notify: Restart apcupsd
 
   - name: Add custom power handling scripts
     template:
@@ -42,10 +44,10 @@
     loop:
     - onbattery
     - offbattery
+    notify: Restart apcupsd
 
-  - name: Enable and restart apcupsd.service
+  - name: Enable apcupsd
     systemd:
       name: apcupsd.service
       enabled: yes
-      state: restarted
-      daemon_reload: yes
+      state: started
