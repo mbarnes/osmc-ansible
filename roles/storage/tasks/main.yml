@@ -56,6 +56,7 @@
         path: /etc/mdadm/mdadm.conf
         regexp: "^ARRAY "
         line: "{{ mdadm_scan.stdout_lines[0] }}"
+      notify: Restart mdmonitor
 
     - name: Find the canonical RAID device path
       command: "realpath {{ mdadm_scan.stdout_lines[0].split()[1] }}"
@@ -93,11 +94,11 @@
         passno: "2"
         state: mounted
 
-    - name: Restart mdmonitor.service
+    - name: Enable mdmonitor
       systemd:
         name: mdmonitor.service
         enabled: yes
-        state: restarted
+        state: started
 
     - name: Add nfs-kernel-server package
       apt:
