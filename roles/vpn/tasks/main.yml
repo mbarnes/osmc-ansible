@@ -34,6 +34,7 @@
       line: auth-user-pass pia.credentials
       regexp: ^auth-user-pass
     loop: "{{ pia_config.files | map(attribute='path') | list }}"
+    notify: Restart openvpn
 
   - name: Add privateinternetaccess credentials
     copy:
@@ -49,16 +50,17 @@
       owner: root
       group: root
     no_log: True
+    notify: Restart openvpn
 
   - name: Link openvpn configuration to the preferred server
     file:
       src: "{{ pia.path }}/{{ privateinternetaccess_server }}.ovpn"
       dest: /etc/openvpn/default.conf
       state: link
+    notify: Restart openvpn
 
-  - name: Enable and restart openvpn.service
+  - name: Enable openvpn
     systemd:
       name: openvpn.service
       enabled: yes
-      state: restarted
-      daemon_reload: yes
+      state: started
