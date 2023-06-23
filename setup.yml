@@ -11,6 +11,7 @@
 # - system    : Run all system-level tasks (as root)
 # - user      : Run all user-level tasks
 # - apt       : (system) APT Configuration
+# - journal   : (system) Journal Configuration
 # - mta       : (system) Mail Transport Agent (MTA) Configuration
 # - ups       : (system) Uninterruptible Power Supply (UPS) Configuration
 # - vpn       : (system) OpenVPN Configuration
@@ -153,6 +154,16 @@
         - python3-pymysql
       tags:
       - apt
+      - system
+
+    #-----------------------
+    # Journal Configuration
+    #-----------------------
+
+    - import_role:
+        name: journal
+      tags:
+      - journal
       - system
 
     #------------------------------------------
