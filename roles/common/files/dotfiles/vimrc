@@ -3,11 +3,6 @@
 " Load plugin and indent files for specific file types
 filetype plugin indent on
 
-" Use the solarized colorscheme
-syntax enable
-set background=dark
-colorscheme solarized
-
 " Set backspace behavior
 set backspace=indent,eol,start
 
@@ -25,16 +20,3 @@ set list listchars=tab:»·,trail:·,extends:…
 
 " Show line numbers
 set number
-
-"------------------------------------------
-" Supplemental configuration for powerline
-"------------------------------------------
-
-" Always display the statusline in all windows
-set laststatus=2
-
-" Always display the tabline, even if there is only one tab
-set showtabline=2
-
-" Hide the default mode text (e.g. -- INSERT -- below the statusline)
-set noshowmode

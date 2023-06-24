@@ -18,6 +18,7 @@
 # - storage   : (system) Storage Configuration
 # - docker    : (system) Docker Configuration
 # - common    : (user) Common System and User Configuration
+# - powerline : (user) Powerline Configuration
 # - kodi      : (user) Kodi Configuration
 # - retropie  : (user) RetroPie Configuration
 #
@@ -433,6 +434,12 @@
       name: common
     tags:
     - common
+    - user
+
+  - import_role:
+      name: powerline
+    tags:
+    - powerline
     - user
 
   - import_role:
