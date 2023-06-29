@@ -89,15 +89,6 @@
     - bazarr.service
     - mariadb.service
 
-    # .NET / Mono based containers gradually consume memory
-    # over time and need periodic restarts.  The memory limit
-    # on these containers should be tuned high enough so cron
-    # restarts them gracefully before they reach their limit.
-    weekly_restart_containerized_services:
-    - sonarr.service
-    - radarr.service
-    - bazarr.service
-
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
     #     of "ansible_user_dir" in that context is "/root".
@@ -398,17 +389,6 @@
         enabled: yes
         state: restarted
       loop: "{{ containerized_services }}"
-      tags:
-      - docker
-      - system
-
-    - name: Periodically restart memory-hungry containers
-      template:
-        src: container-restarts.j2
-        dest: /etc/cron.weekly/container-restarts
-        mode: u=rwx,g=rx,o=rx
-        owner: root
-        group: root
       tags:
       - docker
       - system
