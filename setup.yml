@@ -103,6 +103,16 @@
     tags:
     - always
 
+  - name: Check for necessary inventory variables
+    assert:
+      that: "{{ item }} is defined"
+      msg: "Missing required variable \"{{ item }}\". Please add this to your inventory."
+    loop:
+    - local_area_network
+    - local_area_netmask
+    tags:
+    - always
+
   - name: Verify vault secret
     set_fact:
       vault_test: !vault |
