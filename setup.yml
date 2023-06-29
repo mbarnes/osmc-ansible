@@ -8,19 +8,20 @@
 # Usage: ./setup.yml --ask-vault-pass
 #
 # Available tags:
-# - system    : Run all system-level tasks (as root)
-# - user      : Run all user-level tasks
-# - apt       : (system) APT Configuration
-# - journal   : (system) Journal Configuration
-# - mta       : (system) Mail Transport Agent (MTA) Configuration
-# - ups       : (system) Uninterruptible Power Supply (UPS) Configuration
-# - vpn       : (system) OpenVPN Configuration
-# - storage   : (system) Storage Configuration
-# - docker    : (system) Docker Configuration
-# - common    : (user) Common System and User Configuration
-# - powerline : (user) Powerline Configuration
-# - kodi      : (user) Kodi Configuration
-# - retropie  : (user) RetroPie Configuration
+# - system        : Run all system-level tasks (as root)
+# - user          : Run all user-level tasks
+# - common_system : (system) Common System Configuration
+# - apt           : (system) APT Configuration
+# - journal       : (system) Journal Configuration
+# - mta           : (system) Mail Transport Agent (MTA) Configuration
+# - ups           : (system) Uninterruptible Power Supply (UPS) Configuration
+# - vpn           : (system) OpenVPN Configuration
+# - storage       : (system) Storage Configuration
+# - docker        : (system) Docker Configuration
+# - common_user   : (user) Common User Configuration
+# - powerline     : (user) Powerline Configuration
+# - kodi          : (user) Kodi Configuration
+# - retropie      : (user) RetroPie Configuration
 #
 
 - hosts: mediacenter_group
@@ -141,6 +142,16 @@
     # The -i is necessary to use root's PATH.
     become_flags: -H -S -n -i
     block:
+
+    #-----------------------------
+    # Common System Configuration
+    #-----------------------------
+
+    - import_role:
+        name: common_system
+      tags:
+      - common_system
+      - system
 
     #-------------------
     # Apt Configuration
@@ -430,14 +441,22 @@
     tags:
     - always
 
-  #--------------------------------------
-  # Common System and User Configuration
-  #--------------------------------------
+  #---------------------------
+  # Common User Configuration
+  #---------------------------
 
   - import_role:
-      name: common
+      name: common_user
     tags:
-    - common
+    - common_user
+    - user
+
+  - name: Add osmc-specific bash aliases
+    copy:
+      src: osmc-aliases
+      dest: "{{ ansible_user_dir }}/.config/bash_aliases/"
+    tags:
+    - common_user
     - user
 
   #-------------------------
