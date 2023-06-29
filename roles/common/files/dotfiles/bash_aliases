@@ -1,9 +1,0 @@
-# Force tmux to assume the terminal supports 256 colors.
-alias tmux="tmux -2"
-
-export EDITOR=vim
-export PAGER=less
-
-alias restart-vpn="sudo systemctl restart openvpn@default.service"
-alias watch-storage="if [[ -v TMUX ]]; then tmux rename-window storage; fi; watch --interval 5 \"cat /proc/mdstat; echo; sudo mdadm --detail \$(ls /dev/disk/by-id/md-* | head --lines 1)\""
-alias pull-images="for repository in \$(docker image ls --format \"{{.Repository}}\" | sort | uniq); do docker pull \$repository:latest; done"
