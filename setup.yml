@@ -430,17 +430,29 @@
     tags:
     - always
 
+  #--------------------------------------
+  # Common System and User Configuration
+  #--------------------------------------
+
   - import_role:
       name: common
     tags:
     - common
     - user
 
+  #-------------------------
+  # Powerline Configuration
+  #-------------------------
+
   - import_role:
       name: powerline
     tags:
     - powerline
     - user
+
+  #--------------------
+  # Kodi Configuration
+  #--------------------
 
   - import_role:
       name: kodi
@@ -451,6 +463,10 @@
     tags:
     - kodi
     - user
+
+  #------------------------
+  # RetroPie Configuration
+  #------------------------
 
   - import_role:
       name: retropie
