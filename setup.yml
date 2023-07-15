@@ -13,6 +13,7 @@
 # - common_system : (system) Common System Configuration
 # - apt           : (system) APT Configuration
 # - journal       : (system) Journal Configuration
+# - connman       : (system) ConnMan Configuration
 # - mta           : (system) Mail Transport Agent (MTA) Configuration
 # - ups           : (system) Uninterruptible Power Supply (UPS) Configuration
 # - vpn           : (system) OpenVPN Configuration
@@ -180,6 +181,19 @@
       - journal
       - system
 
+    #-----------------------
+    # ConnMan Configuration
+    #-----------------------
+
+    - import_role:
+        name: connman
+      vars:
+        # DNS proxy binds port 53 and prevents pihole container from starting.
+        connman_enable_dns_proxy: False
+      tags:
+      - connman
+      - system
+
     #------------------------------------------
     # Mail Transport Agent (MTA) Configuration
     #------------------------------------------
@@ -305,16 +319,6 @@
         owner: root
         group: root
       loop: "{{ containerized_services }}"
-      tags:
-      - docker
-      - system
-
-    # DNS proxy binds port 53 and prevents pihole container from starting.
-    - name: Disable connman DNS proxy
-      lineinfile:
-        path: /etc/connman.prefs
-        regexp: "^dnsproxy="
-        line: "dnsproxy=no"
       tags:
       - docker
       - system
