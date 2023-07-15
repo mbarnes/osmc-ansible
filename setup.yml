@@ -33,6 +33,7 @@
 
     network_cidr: "{{ (local_area_network + '/' + local_area_netmask) | ansible.utils.ipaddr('net') }}"
     host_ip_addr: "{{ ansible_all_ipv4_addresses | ansible.utils.ipaddr(network_cidr) | first }}"
+    ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
     newshosting:
       host: news.newshosting.com
