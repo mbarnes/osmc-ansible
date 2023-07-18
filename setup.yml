@@ -20,6 +20,7 @@
 # - storage       : (system) Storage Configuration
 # - docker        : (system) Docker Configuration
 # - pihole        : (system) Pi-hole Configuration
+# - mariadb       : (system) MariaDB Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
 # - kodi          : (user) Kodi Configuration
@@ -73,18 +74,12 @@
     bazarr_host_port: 6767
     bazarr_config_dir: /var/lib/bazarr
 
-    mariadb_image_name: ghcr.io/linuxserver/mariadb
-    mariadb_memory_limit: 150m
-    mariadb_host_port: 3306
-    mariadb_config_dir: /var/lib/mariadb
-
     containerized_services:
     - cadvisor.service
     - nzbget.service
     - sonarr.service
     - radarr.service
     - bazarr.service
-    - mariadb.service
 
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
@@ -252,6 +247,12 @@
       - pihole
       - system
 
+    - import_role:
+        name: mariadb
+      tags:
+      - mariadb
+      - system
+
     - name: Pull Docker images for various services
       docker_image:
         name: "{{ item }}"
@@ -262,7 +263,6 @@
       - "{{ sonarr_image_name }}"
       - "{{ radarr_image_name }}"
       - "{{ bazarr_image_name }}"
-      - "{{ mariadb_image_name }}"
       tags:
       - docker
       - system
@@ -299,9 +299,6 @@
         owner: "{{ osmc_user_uid }}"
         group: "{{ osmc_user_gid }}"
       - path: "{{ bazarr_config_dir }}"
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
-      - path: "{{ mariadb_config_dir }}"
         owner: "{{ osmc_user_uid }}"
         group: "{{ osmc_user_gid }}"
       tags:
@@ -395,25 +392,6 @@
       loop: "{{ containerized_services }}"
       tags:
       - docker
-      - system
-
-    # Kodi database does not need to be secure.
-    - name: Create a MariaDB user for Kodi
-      mysql_user:
-        name: kodi
-        host: '%'
-        password: kodi
-        priv: '*.*:ALL'
-        check_implicit_admin: yes
-      # XXX Client connections are flaky immediately after a restart.
-      #     Perhaps an issue with the linuxserver/mariadb image?
-      #     Tried waiting for the host port to open, but still flaky.
-      #     So resorting to delayed retries.  Seems to work.
-      retries: 3
-      delay: 3
-      register: result
-      until: result is not failed
-      tags:
       - system
 
   #-------------------------------------
