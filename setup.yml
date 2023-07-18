@@ -29,8 +29,6 @@
 
 - hosts: mediacenter_group
   remote_user: osmc
-  # Gather facts later as root
-  gather_facts: no
 
   vars:
 
@@ -45,10 +43,6 @@
       encryption: "yes"
       connections: 60
       retention_days: 4689
-
-    # For system-level tasks that need the non-root user
-    osmc_user_uid: "{{ ansible_env.SUDO_UID }}"
-    osmc_user_gid: "{{ ansible_env.SUDO_GID }}"
 
     cadvisor_image_name: zcube/cadvisor
     cadvisor_memory_limit: 50m
@@ -114,12 +108,6 @@
         66393361353064353139626632366562363337333063663865353333333230383336363436626563
         3236356330363838620a306332613635313765393939306265636465313830666637613433386465
         63306364396263333965613739613663323331333733316438383165636230396366
-    tags:
-    - always
-
-  - name: Gather more facts as root
-    setup:
-    become: yes
     tags:
     - always
 
@@ -290,17 +278,17 @@
         state: directory
       loop:
       - path: "{{ nzbget_config_dir }}"
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
       - path: "{{ sonarr_config_dir }}"
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
       - path: "{{ radarr_config_dir }}"
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
       - path: "{{ bazarr_config_dir }}"
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
       tags:
       - docker
       - system
@@ -322,8 +310,8 @@
         url: https://raw.githubusercontent.com/nzbget/nzbget/develop/nzbget.conf
         dest: "{{ nzbget_config_dir }}/nzbget.conf"
         mode: u=rw,g=r,o=r
-        owner: "{{ osmc_user_uid }}"
-        group: "{{ osmc_user_gid }}"
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
         force: no
       tags:
       - docker
@@ -397,11 +385,6 @@
   #-------------------------------------
   # End of system-level tasks (as root)
   #-------------------------------------
-
-  - name: Gather facts again as remote user
-    setup:
-    tags:
-    - always
 
   #---------------------------
   # Common User Configuration

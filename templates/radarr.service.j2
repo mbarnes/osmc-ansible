@@ -13,8 +13,8 @@ ExecStart=/usr/bin/docker run --rm \
                               --publish={{ radarr_host_port }}:7878 \
                               --volume={{ radarr_config_dir }}:/config \
                               --volume={{ storage_path }}:{{ storage_path }} \
-                              --env=PUID={{ osmc_user_uid }} \
-                              --env=PGID={{ osmc_user_gid }} \
+                              --env=PUID={{ ansible_user_uid }} \
+                              --env=PGID={{ ansible_user_gid }} \
                               --env=TZ={{ tz_name }} \
                               {{ radarr_image_name }}
 
