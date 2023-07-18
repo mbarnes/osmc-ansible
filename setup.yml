@@ -19,6 +19,7 @@
 # - vpn           : (system) OpenVPN Configuration
 # - storage       : (system) Storage Configuration
 # - docker        : (system) Docker Configuration
+# - pihole        : (system) Pi-hole Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
 # - kodi          : (user) Kodi Configuration
@@ -52,11 +53,6 @@
     cadvisor_memory_limit: 50m
     cadvisor_host_port: 8080
 
-    pihole_image_name: pihole/pihole
-    pihole_memory_limit: 100m
-    pihole_host_dns_port: 53
-    pihole_host_http_port: 8053
-
     nzbget_image_name: ghcr.io/linuxserver/nzbget
     nzbget_memory_limit: 50m
     nzbget_host_port: 6789
@@ -84,7 +80,6 @@
 
     containerized_services:
     - cadvisor.service
-    - pihole.service
     - nzbget.service
     - sonarr.service
     - radarr.service
@@ -248,13 +243,21 @@
       - docker
       - system
 
+    - import_role:
+        name: pihole
+      vars:
+        # Kodi is using port 80
+        pihole_host_http_port: 8053
+      tags:
+      - pihole
+      - system
+
     - name: Pull Docker images for various services
       docker_image:
         name: "{{ item }}"
         source: pull
       loop:
       - "{{ cadvisor_image_name }}"
-      - "{{ pihole_image_name }}"
       - "{{ nzbget_image_name }}"
       - "{{ sonarr_image_name }}"
       - "{{ radarr_image_name }}"
@@ -286,12 +289,6 @@
         group: "{{ item.group }}"
         state: directory
       loop:
-      - path: /etc/pihole
-        owner: root
-        group: root
-      - path: /etc/dnsmasq.d
-        owner: root
-        group: root
       - path: "{{ nzbget_config_dir }}"
         owner: "{{ osmc_user_uid }}"
         group: "{{ osmc_user_gid }}"
@@ -319,14 +316,6 @@
         owner: root
         group: root
       loop: "{{ containerized_services }}"
-      tags:
-      - docker
-      - system
-
-    - name: Add pihole configuration
-      copy:
-        src: setupVars.conf
-        dest: /etc/pihole/setupVars.conf
       tags:
       - docker
       - system
