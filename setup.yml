@@ -21,6 +21,11 @@
 # - docker        : (system) Docker Configuration
 # - pihole        : (system) Pi-hole Configuration
 # - mariadb       : (system) MariaDB Configuration
+# - cadvisor      : (system) cAdvisor Configuration
+# - nzbget        : (system) NZBGet Configuration
+# - bazarr        : (system) Bazarr Configuration
+# - radarr        : (system) Radarr Configuration
+# - sonarr        : (system) Sonarr Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
 # - kodi          : (user) Kodi Configuration
@@ -35,45 +40,6 @@
     network_cidr: "{{ (local_area_network + '/' + local_area_netmask) | ansible.utils.ipaddr('net') }}"
     host_ip_addr: "{{ ansible_all_ipv4_addresses | ansible.utils.ipaddr(network_cidr) | first }}"
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
-
-    newshosting:
-      host: news.newshosting.com
-      port: 563
-      username: mbarnes@fastmail.com
-      encryption: "yes"
-      connections: 60
-      retention_days: 4689
-
-    cadvisor_image_name: zcube/cadvisor
-    cadvisor_memory_limit: 50m
-    cadvisor_host_port: 8080
-
-    nzbget_image_name: ghcr.io/linuxserver/nzbget
-    nzbget_memory_limit: 50m
-    nzbget_host_port: 6789
-    nzbget_config_dir: /var/lib/nzbget
-
-    sonarr_image_name: ghcr.io/linuxserver/sonarr
-    sonarr_memory_limit: 250m
-    sonarr_host_port: 8989
-    sonarr_config_dir: /var/lib/sonarr
-
-    radarr_image_name: ghcr.io/linuxserver/radarr
-    radarr_memory_limit: 250m
-    radarr_host_port: 7878
-    radarr_config_dir: /var/lib/radarr
-
-    bazarr_image_name: ghcr.io/linuxserver/bazarr
-    bazarr_memory_limit: 150m
-    bazarr_host_port: 6767
-    bazarr_config_dir: /var/lib/bazarr
-
-    containerized_services:
-    - cadvisor.service
-    - nzbget.service
-    - sonarr.service
-    - radarr.service
-    - bazarr.service
 
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
@@ -241,145 +207,34 @@
       - mariadb
       - system
 
-    - name: Pull Docker images for various services
-      docker_image:
-        name: "{{ item }}"
-        source: pull
-      loop:
-      - "{{ cadvisor_image_name }}"
-      - "{{ nzbget_image_name }}"
-      - "{{ sonarr_image_name }}"
-      - "{{ radarr_image_name }}"
-      - "{{ bazarr_image_name }}"
+    - import_role:
+        name: cadvisor
       tags:
-      - docker
+      - cadvisor
       - system
 
-    - name: Look up timezone name
-      command: cat /etc/timezone
-      register: timezone_result
-      changed_when: False
+    - import_role:
+        name: nzbget
       tags:
-      - docker
+      - nzbget
       - system
 
-    - set_fact:
-        tz_name: "{{ timezone_result.stdout }}"
+    - import_role:
+        name: bazarr
       tags:
-      - docker
+      - bazarr
       - system
 
-    - name: Create Docker volume mount points
-      file:
-        path: "{{ item.path }}"
-        mode: u=rwx,g=rx,o=rx
-        owner: "{{ item.owner }}"
-        group: "{{ item.group }}"
-        state: directory
-      loop:
-      - path: "{{ nzbget_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
-      - path: "{{ sonarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
-      - path: "{{ radarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
-      - path: "{{ bazarr_config_dir }}"
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+    - import_role:
+        name: radarr
       tags:
-      - docker
+      - radarr
       - system
 
-    - name: Add service files for Docker images
-      template:
-        src: "{{ item }}.j2"
-        dest: "/etc/systemd/system/{{ item }}"
-        mode: u=rw,g=r,o=r
-        owner: root
-        group: root
-      loop: "{{ containerized_services }}"
+    - import_role:
+        name: sonarr
       tags:
-      - docker
-      - system
-
-    - name: Download default nzbget configuration
-      get_url:
-        url: https://raw.githubusercontent.com/nzbget/nzbget/develop/nzbget.conf
-        dest: "{{ nzbget_config_dir }}/nzbget.conf"
-        mode: u=rw,g=r,o=r
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
-        force: no
-      tags:
-      - docker
-      - system
-
-    - name: Customize nzbget configuration
-      lineinfile:
-        path: "{{ nzbget_config_dir }}/nzbget.conf"
-        regexp: "^({{ item.key }})="
-        line: "\\1={{ item.value }}"
-        backrefs: yes
-      no_log: True
-      loop:
-      - key: MainDir
-        value: "{{ storage_path }}/Downloads"
-      - key: DestDir
-        value: ${MainDir}/completed
-      - key: InterDir
-        value: ${MainDir}/intermediate
-      - key: WebDir
-        value: ${AppDir}/webui
-      - key: ConfigTemplate
-        value: ${AppDir}/webui/nzbget.conf.template
-      - key: Server1.Name
-        value: Newshosting
-      - key: Server1.Host
-        value: "{{ newshosting.host }}"
-      - key: Server1.Port
-        value: "{{ newshosting.port }}"
-      - key: Server1.Username
-        value: "{{ newshosting.username }}"
-      - key: Server1.Password
-        value: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          64363732636163313835383539646663396133623664383331633665306339633634623636323731
-          6139393066396538633232613733356133303565366339330a393461313731386262613264376161
-          37336537336561356230623432663365633235393237373131623030376561623734663462656666
-          3434616461303430310a356335393133373835333539306635306438616561313664393739366630
-          33646561636136393535386436376164383365656633316662373131363139396630
-      - key: Server1.Encryption
-        value: "{{ newshosting.encryption }}"
-      - key: Server1.Connections
-        value: "{{ newshosting.connections }}"
-      - key: Server1.Retention
-        value: "{{ newshosting.retention_days }}"
-      - key: ControlUsername
-        value: ""
-      - key: ControlPassword
-        value: ""
-      tags:
-      - docker
-      - system
-
-    - name: Reload systemd daemon
-      systemd:
-        daemon_reload: yes
-      tags:
-      - docker
-      - system
-
-    - name: Start or restart containerized services
-      systemd:
-        name: "{{ item }}"
-        enabled: yes
-        state: restarted
-      loop: "{{ containerized_services }}"
-      tags:
-      - docker
+      - sonarr
       - system
 
   #-------------------------------------
