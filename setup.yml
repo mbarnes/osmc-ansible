@@ -11,7 +11,6 @@
 # - system        : Run all system-level tasks (as root)
 # - user          : Run all user-level tasks
 # - common_system : (system) Common System Configuration
-# - apt           : (system) APT Configuration
 # - journal       : (system) Journal Configuration
 # - connman       : (system) ConnMan Configuration
 # - mta           : (system) Mail Transport Agent (MTA) Configuration
@@ -96,23 +95,11 @@
 
     - import_role:
         name: common_system
+      vars:
+        common_system_extra_packages:
+        - python3-netaddr  # for ipaddr filter
       tags:
       - common_system
-      - system
-
-    #-------------------
-    # Apt Configuration
-    #-------------------
-
-    - name: Add required packages
-      apt:
-        name:
-        - bsd-mailx
-        - containerd.io
-        - python3-netaddr
-        - python3-pymysql
-      tags:
-      - apt
       - system
 
     #-----------------------
