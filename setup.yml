@@ -40,6 +40,12 @@
     host_ip_addr: "{{ ansible_all_ipv4_addresses | ansible.utils.ipaddr(network_cidr) | first }}"
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
+    # Host services are determined by DNS aliases
+    host_provides_mysql:  "{{ lookup('community.general.dig', 'mysql' ) == host_ip_addr }}"
+    host_provides_nfs:    "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
+    host_provides_pihole: "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
+    host_provides_usenet: "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
+
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
     #     of "ansible_user_dir" in that context is "/root".
@@ -122,7 +128,7 @@
         name: connman
       vars:
         # DNS proxy binds port 53 and prevents pihole container from starting.
-        connman_enable_dns_proxy: False
+        connman_enable_dns_proxy: "{{ not host_provides_pihole }}"
       tags:
       - connman
       - system
@@ -133,6 +139,7 @@
 
     - import_role:
         name: mta
+      when: host_provides_usenet
       tags:
       - mta
       - system
@@ -144,6 +151,7 @@
 
     - import_role:
         name: ups
+      when: host_provides_usenet
       tags:
       - ups
       - system
@@ -154,6 +162,7 @@
 
     - import_role:
         name: vpn
+      when: host_provides_usenet
       tags:
       - vpn
       - system
@@ -167,6 +176,7 @@
       vars:
         nfs_exports_rw: "{{ host_ip_addr }}"
         nfs_exports_ro: "{{ network_cidr }}"
+      when: host_provides_nfs
       tags:
       - storage
       - system
@@ -177,6 +187,7 @@
 
     - import_role:
         name: docker
+      when: host_provides_pihole or host_provides_usenet
       tags:
       - docker
       - system
@@ -186,42 +197,49 @@
       vars:
         # Kodi is using port 80
         pihole_host_http_port: 8053
+      when: host_provides_pihole
       tags:
       - pihole
       - system
 
     - import_role:
         name: mariadb
+      when: host_provides_mysql
       tags:
       - mariadb
       - system
 
     - import_role:
         name: cadvisor
+      when: host_provides_usenet
       tags:
       - cadvisor
       - system
 
     - import_role:
         name: nzbget
+      when: host_provides_usenet
       tags:
       - nzbget
       - system
 
     - import_role:
         name: bazarr
+      when: host_provides_usenet
       tags:
       - bazarr
       - system
 
     - import_role:
         name: radarr
+      when: host_provides_usenet
       tags:
       - radarr
       - system
 
     - import_role:
         name: sonarr
+      when: host_provides_usenet
       tags:
       - sonarr
       - system
@@ -240,10 +258,12 @@
     - common_user
     - user
 
+  # FIXME Move each alias to its respective role
   - name: Add osmc-specific bash aliases
     copy:
       src: osmc-aliases
       dest: "{{ ansible_user_dir }}/.config/bash_aliases/"
+    when: host_provides_usenet
     tags:
     - common_user
     - user
