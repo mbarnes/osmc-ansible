@@ -61,6 +61,8 @@
     loop:
     - local_area_network
     - local_area_netmask
+    - mysql_host
+    - nfs_host
     tags:
     - always
 
@@ -262,10 +264,6 @@
 
   - import_role:
       name: kodi
-    vars:
-      mysql_host: "{{ host_ip_addr }}"
-      mysql_port: "{{ mariadb_host_port }}"
-      nfs_host: "{{ host_ip_addr }}"
     tags:
     - kodi
     - user
