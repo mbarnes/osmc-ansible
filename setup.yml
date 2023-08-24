@@ -258,16 +258,6 @@
     - common_user
     - user
 
-  # FIXME Move each alias to its respective role
-  - name: Add osmc-specific bash aliases
-    copy:
-      src: osmc-aliases
-      dest: "{{ ansible_user_dir }}/.config/bash_aliases/"
-    when: host_provides_usenet
-    tags:
-    - common_user
-    - user
-
   #-------------------------
   # Powerline Configuration
   #-------------------------
