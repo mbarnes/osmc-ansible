@@ -21,6 +21,7 @@
 # - pihole        : (system) Pi-hole Configuration
 # - mariadb       : (system) MariaDB Configuration
 # - cadvisor      : (system) cAdvisor Configuration
+# - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
 # - bazarr        : (system) Bazarr Configuration
 # - radarr        : (system) Radarr Configuration
@@ -41,6 +42,7 @@
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
     # Host services are determined by DNS aliases
+    host_provides_kodi:   "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
     host_provides_mysql:  "{{ lookup('community.general.dig', 'mysql' ) == host_ip_addr }}"
     host_provides_nfs:    "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
     host_provides_pihole: "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
@@ -195,7 +197,7 @@
     - import_role:
         name: pihole
       vars:
-        # Kodi is using port 80
+        # Nginx is using port 80
         pihole_host_http_port: 8053
       when: host_provides_pihole
       tags:
@@ -214,6 +216,13 @@
       when: host_provides_usenet
       tags:
       - cadvisor
+      - system
+
+    - import_role:
+        name: nginx
+      when: host_provides_usenet
+      tags:
+      - nginx
       - system
 
     - import_role:
@@ -274,6 +283,9 @@
 
   - import_role:
       name: kodi
+    vars:
+      kodi_webserver: "{{ host_provides_kodi }}"
+      kodi_webserver_port: 8000
     tags:
     - kodi
     - user
