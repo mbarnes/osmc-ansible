@@ -42,11 +42,12 @@
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
     # Host services are determined by DNS aliases
-    host_provides_kodi:   "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
-    host_provides_mysql:  "{{ lookup('community.general.dig', 'mysql' ) == host_ip_addr }}"
-    host_provides_nfs:    "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
-    host_provides_pihole: "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
-    host_provides_usenet: "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
+    host_provides_cadvisor: "{{ ansible_fqdn in query('community.general.dig', '_cadvisor._tcp' + '/SRV') | map('split') | map('last') }}"
+    host_provides_kodi:     "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
+    host_provides_mysql:    "{{ lookup('community.general.dig', 'mysql' ) == host_ip_addr }}"
+    host_provides_nfs:      "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
+    host_provides_pihole:   "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
+    host_provides_usenet:   "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
 
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
@@ -213,7 +214,7 @@
 
     - import_role:
         name: cadvisor
-      when: host_provides_usenet
+      when: host_provides_cadvisor
       tags:
       - cadvisor
       - system
