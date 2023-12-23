@@ -18,7 +18,6 @@
 # - vpn           : (system) OpenVPN Configuration
 # - storage       : (system) Storage Configuration
 # - docker        : (system) Docker Configuration
-# - pihole        : (system) Pi-hole Configuration
 # - cadvisor      : (system) cAdvisor Configuration
 # - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
@@ -44,7 +43,6 @@
     host_provides_cadvisor: "{{ ansible_fqdn in query('community.general.dig', '_cadvisor._tcp' + '/SRV') | map('split') | map('last') }}"
     host_provides_kodi:     "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
     host_provides_nfs:      "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
-    host_provides_pihole:   "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
     host_provides_usenet:   "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
 
     # XXX Hard-coding the full path because this is evaluated
@@ -126,9 +124,6 @@
 
     - import_role:
         name: connman
-      vars:
-        # DNS proxy binds port 53 and prevents pihole container from starting.
-        connman_enable_dns_proxy: "{{ not host_provides_pihole }}"
       tags:
       - connman
       - system
@@ -187,19 +182,9 @@
 
     - import_role:
         name: docker
-      when: host_provides_pihole or host_provides_usenet
+      when: host_provides_usenet
       tags:
       - docker
-      - system
-
-    - import_role:
-        name: pihole
-      vars:
-        # Nginx is using port 80
-        pihole_host_http_port: 8053
-      when: host_provides_pihole
-      tags:
-      - pihole
       - system
 
     - import_role:
