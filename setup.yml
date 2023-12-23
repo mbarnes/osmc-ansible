@@ -19,7 +19,6 @@
 # - storage       : (system) Storage Configuration
 # - docker        : (system) Docker Configuration
 # - pihole        : (system) Pi-hole Configuration
-# - mariadb       : (system) MariaDB Configuration
 # - cadvisor      : (system) cAdvisor Configuration
 # - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
@@ -44,7 +43,6 @@
     # Host services are determined by DNS aliases
     host_provides_cadvisor: "{{ ansible_fqdn in query('community.general.dig', '_cadvisor._tcp' + '/SRV') | map('split') | map('last') }}"
     host_provides_kodi:     "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
-    host_provides_mysql:    "{{ lookup('community.general.dig', 'mysql' ) == host_ip_addr }}"
     host_provides_nfs:      "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
     host_provides_pihole:   "{{ lookup('community.general.dig', 'pihole') == host_ip_addr }}"
     host_provides_usenet:   "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
@@ -70,7 +68,6 @@
     loop:
     - local_area_network
     - local_area_netmask
-    - mysql_host
     - nfs_host
     tags:
     - always
@@ -203,13 +200,6 @@
       when: host_provides_pihole
       tags:
       - pihole
-      - system
-
-    - import_role:
-        name: mariadb
-      when: host_provides_mysql
-      tags:
-      - mariadb
       - system
 
     - import_role:
