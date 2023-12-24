@@ -21,7 +21,6 @@
 # - cadvisor      : (system) cAdvisor Configuration
 # - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
-# - radarr        : (system) Radarr Configuration
 # - sonarr        : (system) Sonarr Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
@@ -205,13 +204,6 @@
       when: host_provides_usenet
       tags:
       - nzbget
-      - system
-
-    - import_role:
-        name: radarr
-      when: host_provides_usenet
-      tags:
-      - radarr
       - system
 
     - import_role:
