@@ -21,7 +21,6 @@
 # - cadvisor      : (system) cAdvisor Configuration
 # - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
-# - bazarr        : (system) Bazarr Configuration
 # - radarr        : (system) Radarr Configuration
 # - sonarr        : (system) Sonarr Configuration
 # - common_user   : (user) Common User Configuration
@@ -206,13 +205,6 @@
       when: host_provides_usenet
       tags:
       - nzbget
-      - system
-
-    - import_role:
-        name: bazarr
-      when: host_provides_usenet
-      tags:
-      - bazarr
       - system
 
     - import_role:
