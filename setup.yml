@@ -21,7 +21,6 @@
 # - cadvisor      : (system) cAdvisor Configuration
 # - nginx         : (system) Nginx Configuration
 # - nzbget        : (system) NZBGet Configuration
-# - sonarr        : (system) Sonarr Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
 # - kodi          : (user) Kodi Configuration
@@ -204,13 +203,6 @@
       when: host_provides_usenet
       tags:
       - nzbget
-      - system
-
-    - import_role:
-        name: sonarr
-      when: host_provides_usenet
-      tags:
-      - sonarr
       - system
 
   #-------------------------------------
