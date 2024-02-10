@@ -171,6 +171,21 @@
       - storage
       - system
 
+    - import_role:
+        name: smartd
+      vars:
+        smartd_devices:
+          DEVICESCAN:
+            type: removable
+            nocheck: standby
+            mail_recipients:
+            - "{{ mta_destination_address }}"
+            mail_script: /usr/share/smartmontools/smartd-runner
+      when: host_provides_nfs
+      tags:
+      - storage
+      - system
+
     #----------------------
     # Docker Configuration
     #----------------------
