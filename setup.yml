@@ -33,9 +33,8 @@
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
     # Host services are determined by DNS aliases
-    host_provides_kodi:     "{{ lookup('community.general.dig', 'kodi'  ) == host_ip_addr }}"
-    host_provides_nfs:      "{{ lookup('community.general.dig', 'nfs'   ) == host_ip_addr }}"
-    host_provides_usenet:   "{{ lookup('community.general.dig', 'usenet') == host_ip_addr }}"
+    host_provides_kodi: "{{ lookup('community.general.dig', 'kodi') == host_ip_addr }}"
+    host_provides_nfs:  "{{ lookup('community.general.dig', 'nfs' ) == host_ip_addr }}"
 
     # XXX Hard-coding the full path because this is evaluated
     #     from a system-level task (exports.j2) and the value
@@ -126,7 +125,7 @@
 
     - import_role:
         name: mta
-      when: host_provides_usenet
+      when: host_provides_nfs
       tags:
       - mta
       - system
@@ -138,7 +137,7 @@
 
     - import_role:
         name: ups
-      when: host_provides_usenet
+      when: host_provides_nfs
       tags:
       - ups
       - system
@@ -149,7 +148,7 @@
 
     - import_role:
         name: vpn
-      when: host_provides_usenet
+      when: host_provides_nfs
       tags:
       - vpn
       - system
