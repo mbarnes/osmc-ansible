@@ -19,7 +19,6 @@
 # - storage       : (system) Storage Configuration
 # - docker        : (system) Docker Configuration
 # - nginx         : (system) Nginx Configuration
-# - nzbget        : (system) NZBGet Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
 # - kodi          : (user) Kodi Configuration
@@ -199,13 +198,6 @@
       when: host_provides_usenet
       tags:
       - nginx
-      - system
-
-    - import_role:
-        name: nzbget
-      when: host_provides_usenet
-      tags:
-      - nzbget
       - system
 
   #-------------------------------------
