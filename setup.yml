@@ -163,9 +163,6 @@
 
     - import_role:
         name: storage
-      vars:
-        nfs_exports_rw: "{{ host_ip_addr }}"
-        nfs_exports_ro: "{{ network_cidr }}"
       when: host_provides_nfs
       tags:
       - storage
