@@ -1,0 +1,6 @@
+---
+- name: Restart mdmonitor
+  systemd:
+    name: mdmonitor.service
+    state: restarted
+  become: yes
