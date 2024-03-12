@@ -18,7 +18,6 @@
 # - storage       : (system) Storage Configuration
 # - common_user   : (user) Common User Configuration
 # - powerline     : (user) Powerline Configuration
-# - kodi          : (user) Kodi Configuration
 # - retropie      : (user) RetroPie Configuration
 #
 
@@ -32,13 +31,7 @@
     ansible_fqdn: "{{ lookup('community.general.dig', host_ip_addr + '/PTR') }}"
 
     # Host services are determined by DNS aliases
-    host_provides_kodi: "{{ lookup('community.general.dig', 'kodi') == host_ip_addr }}"
-    host_provides_nfs:  "{{ lookup('community.general.dig', 'nfs' ) == host_ip_addr }}"
-
-    # XXX Hard-coding the full path because this is evaluated
-    #     from a system-level task (exports.j2) and the value
-    #     of "ansible_user_dir" in that context is "/root".
-    kodi_userdata_path: "/home/osmc/.kodi/userdata"
+    host_provides_nfs: "{{ lookup('community.general.dig', 'nfs' ) == host_ip_addr }}"
 
   pre_tasks:
 
@@ -189,19 +182,6 @@
       name: powerline
     tags:
     - powerline
-    - user
-
-  #--------------------
-  # Kodi Configuration
-  #--------------------
-
-  - import_role:
-      name: kodi
-    vars:
-      kodi_webserver: "{{ host_provides_kodi }}"
-      kodi_webserver_port: 8000
-    tags:
-    - kodi
     - user
 
   #------------------------
