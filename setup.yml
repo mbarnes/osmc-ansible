@@ -66,102 +66,87 @@
 
   tasks:
 
-  #------------------------------------
-  # Begin system-level tasks (as root)
-  #------------------------------------
+  #-----------------------------
+  # Common System Configuration
+  #-----------------------------
 
-  - name: System-level tasks
-    become: yes
-    become_method: sudo
-    # The -i is necessary to use root's PATH.
-    become_flags: -H -S -n -i
-    block:
+  - import_role:
+      name: common_system
+    vars:
+      common_system_extra_packages:
+      - python3-netaddr  # for ipaddr filter
+    tags:
+    - common_system
+    - system
 
-    #-----------------------------
-    # Common System Configuration
-    #-----------------------------
+  #-----------------------
+  # Journal Configuration
+  #-----------------------
 
-    - import_role:
-        name: common_system
-      vars:
-        common_system_extra_packages:
-        - python3-netaddr  # for ipaddr filter
-      tags:
-      - common_system
-      - system
+  - import_role:
+      name: journal
+    tags:
+    - journal
+    - system
 
-    #-----------------------
-    # Journal Configuration
-    #-----------------------
+  #-----------------------
+  # ConnMan Configuration
+  #-----------------------
 
-    - import_role:
-        name: journal
-      tags:
-      - journal
-      - system
+  - import_role:
+      name: connman
+    tags:
+    - connman
+    - system
 
-    #-----------------------
-    # ConnMan Configuration
-    #-----------------------
+  #------------------------------------------
+  # Mail Transport Agent (MTA) Configuration
+  #------------------------------------------
 
-    - import_role:
-        name: connman
-      tags:
-      - connman
-      - system
+  - import_role:
+      name: mta
+    when: host_provides_nfs
+    tags:
+    - mta
+    - system
 
-    #------------------------------------------
-    # Mail Transport Agent (MTA) Configuration
-    #------------------------------------------
+  #--------------------------------------------------
+  # Uninterruptible Power Supply (UPS) Configuration
+  # For an APC Back-UPS CS 350
+  #--------------------------------------------------
 
-    - import_role:
-        name: mta
-      when: host_provides_nfs
-      tags:
-      - mta
-      - system
+  - import_role:
+      name: ups
+    when: host_provides_nfs
+    tags:
+    - ups
+    - system
 
-    #--------------------------------------------------
-    # Uninterruptible Power Supply (UPS) Configuration
-    # For an APC Back-UPS CS 350
-    #--------------------------------------------------
+  #-----------------------
+  # Storage Configuration
+  #-----------------------
 
-    - import_role:
-        name: ups
-      when: host_provides_nfs
-      tags:
-      - ups
-      - system
+  - import_role:
+      name: storage
+    when: host_provides_nfs
+    tags:
+    - storage
+    - system
 
-    #-----------------------
-    # Storage Configuration
-    #-----------------------
-
-    - import_role:
-        name: storage
-      when: host_provides_nfs
-      tags:
-      - storage
-      - system
-
-    - import_role:
-        name: smartd
-      vars:
-        smartd_devices:
-          DEVICESCAN:
-            type: removable
-            nocheck: standby
-            mail_recipients:
-            - "{{ mta_destination_address }}"
-            mail_script: /usr/share/smartmontools/smartd-runner
-      when: host_provides_nfs
-      tags:
-      - storage
-      - system
-
-  #-------------------------------------
-  # End of system-level tasks (as root)
-  #-------------------------------------
+  - import_role:
+      name: smartd
+    vars:
+      smartd_devices:
+        DEVICESCAN:
+          type: removable
+          nocheck: standby
+          mail_recipients:
+          - "{{ mta_destination_address }}"
+          mail_script: /usr/share/smartmontools/smartd-runner
+    when: host_provides_nfs
+    tags:
+    - storage
+    - system
 
   #---------------------------
   # Common User Configuration
