@@ -49,7 +49,6 @@
     loop:
     - local_area_network
     - local_area_netmask
-    - nfs_host
     tags:
     - always
 
