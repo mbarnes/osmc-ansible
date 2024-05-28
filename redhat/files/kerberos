@@ -1,0 +1,1 @@
+alias watch-krenew="if [[ -v TMUX ]]; then tmux rename-window krenew; fi; watch --interval 60 \"klist; echo; systemctl --user status krenew.service\""

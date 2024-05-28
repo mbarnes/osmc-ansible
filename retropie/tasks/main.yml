@@ -1,0 +1,17 @@
+---
+- name: Add user to "input" group
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: input
+    append: yes
+  become: yes
+
+# Do not update since retrOSMCmk2's setup.sh script modifies
+# files in the repo, which will cause git to complain of local
+# modifications when trying to update.  Just create an initial
+# clone.  The setup.sh script itself can update the repo.
+- name: Clone retrOSMCmk2 repo for RetroPie installer
+  git:
+    repo: https://github.com/hissingshark/retrOSMCmk2.git
+    dest: "{{ ansible_user_dir }}/retrOSMCmk2"
+    update: false
