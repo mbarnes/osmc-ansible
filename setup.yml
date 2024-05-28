@@ -64,14 +64,13 @@
     tags:
     - always
 
-  tasks:
+  roles:
 
   #-----------------------------
   # Common System Configuration
   #-----------------------------
 
-  - import_role:
-      name: common_system
+  - role: common_system
     vars:
       common_system_extra_packages:
       - python3-netaddr  # for ipaddr filter
@@ -83,8 +82,7 @@
   # Journal Configuration
   #-----------------------
 
-  - import_role:
-      name: journal
+  - role: journal
     tags:
     - journal
     - system
@@ -93,8 +91,7 @@
   # ConnMan Configuration
   #-----------------------
 
-  - import_role:
-      name: connman
+  - role: connman
     tags:
     - connman
     - system
@@ -103,8 +100,7 @@
   # Mail Transport Agent (MTA) Configuration
   #------------------------------------------
 
-  - import_role:
-      name: mta
+  - role: mta
     when: host_provides_nfs
     tags:
     - mta
@@ -115,8 +111,7 @@
   # For an APC Back-UPS CS 350
   #--------------------------------------------------
 
-  - import_role:
-      name: ups
+  - role: ups
     when: host_provides_nfs
     tags:
     - ups
@@ -126,15 +121,13 @@
   # Storage Configuration
   #-----------------------
 
-  - import_role:
-      name: storage
+  - role: storage
     when: host_provides_nfs
     tags:
     - storage
     - system
 
-  - import_role:
-      name: smartd
+  - role: smartd
     vars:
       smartd_devices:
         DEVICESCAN:
@@ -152,8 +145,7 @@
   # Common User Configuration
   #---------------------------
 
-  - import_role:
-      name: common_user
+  - role: common_user
     tags:
     - common_user
     - user
@@ -162,8 +154,7 @@
   # Powerline Configuration
   #-------------------------
 
-  - import_role:
-      name: powerline
+  - role: powerline
     tags:
     - powerline
     - user
@@ -172,8 +163,7 @@
   # RetroPie Configuration
   #------------------------
 
-  - import_role:
-      name: retropie
+  - role: retropie
     tags:
     - retropie
     - user
