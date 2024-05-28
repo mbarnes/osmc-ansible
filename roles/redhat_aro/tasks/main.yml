@@ -1,0 +1,41 @@
+---
+- name: Begin Red Hat ARO configuration
+  become: yes
+  block:
+
+  # See https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt
+  - name: Add Microsoft's official GPG key
+    get_url:
+      url: https://packages.microsoft.com/keys/microsoft.asc
+      dest: "{{ microsoft_signing_key_path }}"
+
+  - name: Add apt repository for Azure CLI
+    apt_repository:
+      repo: "deb [arch={{ dpkg_architecture }} signed-by={{ microsoft_signing_key_path }}] https://packages.microsoft.com/repos/azure-cli/ {{ ansible_distribution_release }} main"
+      filename: azure-cli
+
+  - name: Add packages for ARO development
+    apt:
+      name:
+      - azure-cli
+      - curl
+      - jq
+      - libgpgme-dev
+      - make
+      - openvpn
+      - podman
+      - podman-docker
+      - python3-venv
+      - yamllint
+      # ARO-RP test dependencies
+      - libbtrfs-dev
+      - libdevmapper-dev
+
+- name: Add bash aliases
+  copy:
+    src: redhat_aro
+    dest: "{{ bash_aliases_dir }}/"
+
+- name: Configure host for Microsoft Intune
+  include_tasks: microsoft_intune.yml
+  when: enable_microsoft_intune | default(False)

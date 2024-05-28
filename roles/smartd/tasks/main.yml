@@ -1,0 +1,24 @@
+---
+- name: Begin smartd configuration
+  become: yes
+  block:
+
+  - name: Install smartmontools
+    apt:
+      name: smartmontools
+
+  - name: Create smartd configuration
+    template:
+      src: smartd.conf.j2
+      dest: "{{ smartd_config_path }}"
+      owner: root
+      group: root
+      mode: 0644
+      validate: smartd -q onecheck -c %s
+    notify: Restart smartd
+
+  - name: Enable smartd
+    systemd_service:
+      name: smartd.service
+      enabled: true
+      state: started
